@@ -25,6 +25,8 @@ export interface PMTreeToolbarProps {
     leftSection?: React.ReactNode;
     leftSectionTitle?: string;
     rightSection?: React.ReactNode;
+
+    toolbarBg?: string;
 }
 
 const ALL_NODE_TYPES: NodeType[] = [NodeType.UA, NodeType.OA, NodeType.U, NodeType.O];
@@ -43,6 +45,7 @@ export function PMTreeToolbar({
     leftSection,
     leftSectionTitle = 'Actions',
     rightSection,
+    toolbarBg,
 }: PMTreeToolbarProps) {
     const theme = useMantineTheme();
     const directionLabel = direction === 'descendants' ? 'Descendants' : 'Ascendants';
@@ -255,7 +258,7 @@ export function PMTreeToolbar({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 borderBottom: `1px solid ${theme.other.intellijDivider as string}`,
-                backgroundColor: theme.other.intellijToolbarBg as string,
+                backgroundColor: toolbarBg ?? theme.other.intellijToolbarBg as string,
                 padding: '2px 8px',
                 height: 60,
                 overflow: 'hidden',

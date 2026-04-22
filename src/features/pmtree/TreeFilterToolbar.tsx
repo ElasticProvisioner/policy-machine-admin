@@ -55,34 +55,32 @@ export function TreeFilterToolbar({ filters, onFiltersChange }: TreeFilterToolba
             {ALL_NODE_TYPES.map((nodeType) => (
                 <ActionIcon
                     key={nodeType}
-                    variant="default"
-                    size="md"
+                    variant="subtle"
+                    size="lg"
                     mr={2}
                     onClick={() => handleNodeTypeToggle(nodeType)}
                     style={{
                         flexShrink: 0,
-                        borderColor: filters.nodeTypes.includes(nodeType) ? 'var(--mantine-primary-color-filled)' : 'lightgrey',
-                        borderWidth: filters.nodeTypes.includes(nodeType) ? '2px' : '1px',
+                        opacity: filters.nodeTypes.includes(nodeType) ? 1 : 0.35,
                     }}
                 >
-                    <NodeIcon type={nodeType} size={20} />
+                    <NodeIcon type={nodeType} size={22} />
                 </ActionIcon>
             ))}
 
             <Tooltip label="Show outgoing associations">
                 <ActionIcon
-                    variant="default"
-                    size="md"
+                    variant="subtle"
+                    size="lg"
                     mr={2}
                     onClick={() => handleAssociationDirectionToggle(AssociationDirection.Outgoing)}
                     style={{
                         flexShrink: 0,
-                        borderColor: filters.showOutgoingAssociations ? 'var(--mantine-primary-color-filled)' : 'lightgrey',
-                        borderWidth: filters.showOutgoingAssociations ? '2px' : '1px',
+                        opacity: filters.showOutgoingAssociations ? 1 : 0.35,
                     }}
                 >
                     <OutgoingAssociationIcon
-                        size="20px"
+                        size="22px"
                         color={theme.colors.green[9]}
                     />
                 </ActionIcon>
@@ -90,17 +88,16 @@ export function TreeFilterToolbar({ filters, onFiltersChange }: TreeFilterToolba
 
             <Tooltip label="Show incoming associations">
                 <ActionIcon
-                    variant="default"
-                    size="md"
+                    variant="subtle"
+                    size="lg"
                     onClick={() => handleAssociationDirectionToggle(AssociationDirection.Incoming)}
                     style={{
                         flexShrink: 0,
-                        borderColor: filters.showIncomingAssociations ? 'var(--mantine-primary-color-filled)' : 'lightgrey',
-                        borderWidth: filters.showIncomingAssociations ? '2px' : '1px',
+                        opacity: filters.showIncomingAssociations ? 1 : 0.35,
                     }}
                 >
                     <IncomingAssociationIcon
-                        size="20px"
+                        size="22px"
                         color={theme.colors.green[9]}
                     />
                 </ActionIcon>

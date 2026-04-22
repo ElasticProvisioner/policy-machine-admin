@@ -413,6 +413,35 @@ export function Dashboard() {
 				ref={containerRef}
 				style={{ display: 'flex', height: '100%', width: '100%', overflow: 'hidden' }}
 			>
+			{/* Vertical sidebar */}
+			<div
+				style={{
+					width: 40,
+					flexShrink: 0,
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					paddingTop: 8,
+					backgroundColor: 'var(--mantine-color-gray-0)',
+					borderRight: `1px solid ${theme.other.intellijDivider as string}`,
+				}}
+			>
+				<Tooltip
+					label={uaTreeCollapsed ? 'Show UA Tree' : 'Hide UA Tree'}
+					position="right"
+				>
+					<ActionIcon
+						variant="subtle"
+						onClick={uaTreeCollapsed ? expandUaTree : collapseUaTree}
+						style={!uaTreeCollapsed ? {
+							color: theme.colors[theme.primaryColor][7],
+						} : undefined}
+					>
+						<NodeIcon type={NodeType.UA} size={20} />
+					</ActionIcon>
+				</Tooltip>
+			</div>
+				<div style={{ display: 'flex', flex: 1 }}>
 				{/* UA Tree panel */}
 				<div
 					style={{
@@ -420,7 +449,7 @@ export function Dashboard() {
 						flexShrink: 0,
 						height: '100%',
 						overflow: 'hidden',
-						backgroundColor: theme.other.intellijPanelBg as string,
+						backgroundColor: 'var(--mantine-color-gray-0)',
 					}}
 				>
 					<PMTree
@@ -431,6 +460,7 @@ export function Dashboard() {
 						showDirection={false}
 						showCreatePolicyClass={false}
 						clickHandlers={{ onSelect: handleUANodeSelect }}
+						toolbarBg="var(--mantine-color-gray-0)"
 					/>
 				</div>
 
@@ -520,6 +550,7 @@ export function Dashboard() {
 						onTabClose={closeTab}
 					/>
 				</div>
+			</div>
 			</div>
 
 			<Menu

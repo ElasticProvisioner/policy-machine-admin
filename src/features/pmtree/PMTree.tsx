@@ -56,6 +56,8 @@ export interface PMTreeProps {
     // Custom toolbar sections
     leftToolbarSection?: React.ReactNode;
     rightToolbarSection?: React.ReactNode;
+
+    toolbarBg?: string;
 }
 
 function SelectedNodeLabel({ node }: { node: TreeNode | null }) {
@@ -285,6 +287,7 @@ export function PMTree(props: PMTreeProps) {
             onCreatePolicyClass={props.onCreatePolicyClass}
             leftSection={props.leftToolbarSection}
             rightSection={props.rightToolbarSection}
+            toolbarBg={props.toolbarBg}
         />
     );
 

@@ -18,7 +18,7 @@ import {
 	IncomingAssociationIcon,
 	OutgoingAssociationIcon,
 	shouldShowExpansionIcon,
-	truncateMiddle, TreeNode, getTypeColor
+	truncateMiddle, TreeNode
 } from "@/features/pmtree/tree-utils";
 
 export interface PMNodeProps extends NodeRendererProps<TreeNode> {
@@ -139,7 +139,6 @@ export function PMNode({ node, style, tree, clickHandlers, direction, treeDataAt
 						fontWeight: 500,
 						color: 'var(--mantine-color-text)',
 						userSelect: 'none',
-						cursor: 'default',
 						whiteSpace: 'nowrap'
 					}}>
 						{truncatedName}

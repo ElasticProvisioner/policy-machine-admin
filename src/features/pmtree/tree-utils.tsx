@@ -1,6 +1,6 @@
  import React from "react";
 import {Node, NodeType} from "@/shared/api/pdp.types";
-import {useMantineTheme} from "@mantine/core";
+import { Tooltip } from "@mantine/core";
 
 // Re-export association icons from the icons directory
 export { IncomingAssociationIcon } from "@/components/icons/IncomingAssociationIcon";
@@ -21,6 +21,26 @@ export type NodeIconProps = {
 	style?: React.CSSProperties,
 }
 
+const TYPE_COLORS: Record<string, string> = {
+	[NodeType.PC]: 'var(--mantine-color-green-9)',
+	[NodeType.UA]: 'var(--mantine-color-red-8)',
+	[NodeType.OA]: 'var(--mantine-color-blue-8)',
+	[NodeType.U]:  'var(--mantine-color-red-4)',
+	[NodeType.O]:  'var(--mantine-color-blue-4)',
+};
+
+const NODE_TYPE_LABELS: Record<string, string> = {
+	[NodeType.PC]: 'Policy Class',
+	[NodeType.UA]: 'User Attribute',
+	[NodeType.OA]: 'Object Attribute',
+	[NodeType.U]:  'User',
+	[NodeType.O]:  'Object',
+};
+
+export function getTypeColor(type: string): string {
+	return TYPE_COLORS[type] ?? 'var(--mantine-color-gray-5)';
+}
+
 function calculateFontSize(size: number): string {
 	return `${Math.round(size * 0.65)}px`;
 }
@@ -31,48 +51,31 @@ export function NodeIcon({type, size = 16, style}: NodeIconProps) {
 	const fontSize = calculateFontSize(size);
 
 	return (
-		<span
-			style={{
-				borderRadius: '30%',
-				color,
-				fontSize,
-				fontWeight: 'bold',
-				width: sizeStr,
-				height: sizeStr,
-				display: 'inline-flex',
-				textAlign: 'center',
-				justifyContent: 'center',
-				alignItems: 'center',
-				overflow: 'hidden',
-				whiteSpace: 'nowrap',
-				minWidth: sizeStr,
-				flexShrink: 0,
-				...style,
-			}}
-		>
-			{type}
-		</span>
+		<Tooltip label={NODE_TYPE_LABELS[type] ?? type} openDelay={400} withArrow>
+			<span
+				style={{
+					borderRadius: '22%',
+					backgroundColor: color,
+					color: 'white',
+					fontSize,
+					fontWeight: 'bold',
+					width: sizeStr,
+					height: sizeStr,
+					display: 'inline-flex',
+					textAlign: 'center',
+					justifyContent: 'center',
+					alignItems: 'center',
+					overflow: 'hidden',
+					whiteSpace: 'nowrap',
+					minWidth: sizeStr,
+					flexShrink: 0,
+					...style,
+				}}
+			>
+				{type}
+			</span>
+		</Tooltip>
 	);
-}
-
-// Utility functions
-export function getTypeColor(type: string) {
-	const theme = useMantineTheme();
-
-	switch (type) {
-		case NodeType.PC:
-			return theme.colors.green[9];
-		case NodeType.UA:
-			return theme.colors.red[6];
-		case NodeType.OA:
-			return theme.colors.blue[6];
-		case NodeType.U:
-			return theme.colors.red[3];
-		case NodeType.O:
-			return theme.colors.blue[3];
-		default:
-			return theme.colors.gray[5];
-	}
 }
 
 export function updateNodeChildren(treeData: TreeNode[], nodeId: string, children: TreeNode[]): TreeNode[] {

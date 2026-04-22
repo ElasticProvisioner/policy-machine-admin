@@ -17,10 +17,12 @@ export function PMLEditorPage() {
     >
       <AppShell.Header style={{ backgroundColor: 'var(--mantine-color-gray-0)' }}>
         <Group h="100%" px="md">
-          <Group component={Link} to="/dashboard" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <PMIcon style={{ width: '32px', height: '32px' }} />
-            <Title order={3}>Policy Machine</Title>
-          </Group>
+          <Link to="/dashboard" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Group h="100%" px="md">
+              <PMIcon style={{ width: '32px', height: '32px' }} />
+              <Title order={3}>Policy Machine</Title>
+            </Group>
+          </Link>
         </Group>
       </AppShell.Header>
       <AppShell.Main

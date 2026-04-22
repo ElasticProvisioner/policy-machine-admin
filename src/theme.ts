@@ -60,8 +60,8 @@ export const lightTheme = createTheme({
     green,
     red
   },
-  primaryColor: 'blue',
-  primaryShade: 6,
+  primaryColor: 'green',
+  primaryShade: 9,
   other: {
     intellijContentBg: '#ffffff',
     intellijPanelBg: '#ffffff',
@@ -77,8 +77,8 @@ export const darkTheme = createTheme({
     green,
     red
   },
-  primaryColor: 'blue',
-  primaryShade: 6,
+  primaryColor: 'green',
+  primaryShade: 9,
   other: {
     intellijContentBg: '#1e1f22',  // JetBrains Dark editor background
     intellijPanelBg: '#2b2d30',    // JetBrains Dark sidebar/panel background

@@ -74,10 +74,6 @@
     background-color: var(--mantine-color-red-6);
 }
 
-.node:global(.isSelectedStart.isSelectedEnd) {
-    background: var(--mantine-primary-color-0);
-    border-radius: 8px;
-}
 
 .nodeRowItem {
     border-radius: 30%;
