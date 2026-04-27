@@ -20,6 +20,7 @@
     "storybook:build": "storybook build"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-sans": "^5.2.8",
     "@improbable-eng/grpc-web": "^0.15.0",
     "@mantine/core": "7.12.2",
     "@mantine/form": "^8.0.2",

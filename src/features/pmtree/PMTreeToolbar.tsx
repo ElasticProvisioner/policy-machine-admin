@@ -276,8 +276,8 @@ export function PMTreeToolbar({
                     >
                         <div style={{ padding: '0 8px' }}>
                             <ToolBarSection title="Reset">
-                                <ActionIcon variant="default" onClick={onReset}>
-                                    <IconRefresh size={18} />
+                                <ActionIcon variant="subtle" onClick={onReset}>
+                                    <IconRefresh size={26} color="black" />
                                 </ActionIcon>
                             </ToolBarSection>
                         </div>
@@ -296,8 +296,8 @@ export function PMTreeToolbar({
                     >
                         <div style={{ padding: '0 8px' }}>
                             <ToolBarSection title="Create">
-                                <ActionIcon variant="default" size="md" onClick={onCreatePolicyClass}>
-                                    <NodeIcon type={NodeType.PC} size={20} />
+                                <ActionIcon variant="subtle" size="md" onClick={onCreatePolicyClass}>
+                                    <NodeIcon type={NodeType.PC} size={24} />
                                 </ActionIcon>
                             </ToolBarSection>
                         </div>

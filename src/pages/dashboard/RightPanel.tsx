@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActionIcon, Menu, Tooltip, useMantineTheme } from '@mantine/core';
-import { IconBan, IconCalendarCode, IconDotsVertical, IconX } from '@tabler/icons-react';
+import { IconBan, IconCalendarCode, IconDotsVertical, IconInfoSquareRounded, IconX } from '@tabler/icons-react';
 import { ProhibitionDetails, ProhibitionsPanel } from '@/features/prohibitions';
 import { ObligationsPanel } from '@/features/obligations/ObligationsPanel';
 import { Operations } from '@/features/operations';
@@ -153,9 +153,7 @@ function TabItem({
 				paddingRight: 4,
 				gap: 4,
 				cursor: 'pointer',
-				backgroundColor: isActive
-					? (theme.other.intellijPanelBg as string)
-					: (theme.other.intellijToolbarBg as string),
+				backgroundColor: 'var(--mantine-color-gray-0)',
 				borderBottom: isActive
 					? '2px solid var(--mantine-primary-color-filled)'
 					: '2px solid transparent',
@@ -230,7 +228,7 @@ function OverflowMenu({
 	);
 }
 
-function renderTabContent(
+export function renderTabContent(
 	tab: Tab,
 	selectedNodes: TreeNode[],
 	onClose: () => void
@@ -324,7 +322,7 @@ export function RightPanel({
 					height: 42,
 					flexShrink: 0,
 					borderBottom: `1px solid ${theme.other.intellijDivider as string}`,
-					backgroundColor: theme.other.intellijToolbarBg as string,
+					backgroundColor: 'var(--mantine-color-gray-0)',
 					display: 'flex',
 					overflow: 'hidden',
 				}}
@@ -349,7 +347,13 @@ export function RightPanel({
 
 			{/* Content panels — all mounted, only active shown */}
 			<div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
-				{tabs.map((tab) => (
+				{tabs.length === 0 ? (
+					<div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: 0.35, userSelect: 'none' }}>
+						<span style={{ fontSize: 16 }}>Right-click a node and select</span>
+						<IconInfoSquareRounded size={20} />
+						<span style={{ fontSize: 16, fontWeight: 700 }}>Info</span>
+					</div>
+				) : tabs.map((tab) => (
 					<div
 						key={tab.id}
 						style={{

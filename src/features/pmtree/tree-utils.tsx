@@ -42,7 +42,7 @@ export function getTypeColor(type: string): string {
 }
 
 function calculateFontSize(size: number): string {
-	return `${Math.round(size * 0.65)}px`;
+	return `${Math.round(size * 0.6)}px`;
 }
 
 export function NodeIcon({type, size = 16, style}: NodeIconProps) {
@@ -51,7 +51,6 @@ export function NodeIcon({type, size = 16, style}: NodeIconProps) {
 	const fontSize = calculateFontSize(size);
 
 	return (
-		<Tooltip label={NODE_TYPE_LABELS[type] ?? type} openDelay={400} withArrow>
 			<span
 				style={{
 					borderRadius: '22%',
@@ -74,7 +73,6 @@ export function NodeIcon({type, size = 16, style}: NodeIconProps) {
 			>
 				{type}
 			</span>
-		</Tooltip>
 	);
 }
 

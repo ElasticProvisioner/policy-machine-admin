@@ -56,26 +56,22 @@ export function TreeFilterToolbar({ filters, onFiltersChange }: TreeFilterToolba
                 <ActionIcon
                     key={nodeType}
                     variant="subtle"
-                    size="lg"
-                    mr={2}
+                    size="md"
                     onClick={() => handleNodeTypeToggle(nodeType)}
                     style={{
-                        flexShrink: 0,
                         opacity: filters.nodeTypes.includes(nodeType) ? 1 : 0.35,
                     }}
                 >
-                    <NodeIcon type={nodeType} size={22} />
+                    <NodeIcon type={nodeType} size={24} />
                 </ActionIcon>
             ))}
 
             <Tooltip label="Show outgoing associations">
                 <ActionIcon
                     variant="subtle"
-                    size="lg"
-                    mr={2}
+                    size="md"
                     onClick={() => handleAssociationDirectionToggle(AssociationDirection.Outgoing)}
                     style={{
-                        flexShrink: 0,
                         opacity: filters.showOutgoingAssociations ? 1 : 0.35,
                     }}
                 >
@@ -89,10 +85,9 @@ export function TreeFilterToolbar({ filters, onFiltersChange }: TreeFilterToolba
             <Tooltip label="Show incoming associations">
                 <ActionIcon
                     variant="subtle"
-                    size="lg"
+                    size="md"
                     onClick={() => handleAssociationDirectionToggle(AssociationDirection.Incoming)}
                     style={{
-                        flexShrink: 0,
                         opacity: filters.showIncomingAssociations ? 1 : 0.35,
                     }}
                 >

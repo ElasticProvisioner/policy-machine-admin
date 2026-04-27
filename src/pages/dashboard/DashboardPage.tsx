@@ -1,10 +1,8 @@
-import {AppShell, Button, Group, Title, useMantineTheme} from "@mantine/core";
+import {AppShell, Group, Text, Title, useMantineTheme} from "@mantine/core";
 import {PMIcon} from "@/components/icons/PMIcon";
 import {UserMenu} from "@/features/user-menu/UserMenu";
 import React from "react";
 import {Dashboard} from "@/pages/dashboard/Dashboard";
-import { Link } from "react-router-dom";
-import { IconCode } from "@tabler/icons-react";
 
 export function DashboardPage() {
 	const mantineTheme = useMantineTheme();
@@ -34,6 +32,19 @@ export function DashboardPage() {
 			}}>
 				<div style={{ flex: 1, minHeight: 0 }}>
 					<Dashboard />
+				</div>
+				<div
+					style={{
+						height: 20,
+						flexShrink: 0,
+						display: 'flex',
+						alignItems: 'center',
+						paddingInline: 12,
+						borderTop: `1px solid ${mantineTheme.other.intellijDivider as string}`,
+						backgroundColor: 'var(--mantine-color-gray-0)',
+					}}
+				>
+					<Text size="xs" c="dimmed">Policy Machine Admin</Text>
 				</div>
 			</AppShell.Main>
 		</AppShell>

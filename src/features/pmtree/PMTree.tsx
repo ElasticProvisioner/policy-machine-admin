@@ -308,7 +308,7 @@ export function PMTree(props: PMTreeProps) {
                         display: "flex",
                         width: "100%",
                         flexDirection: "column",
-                        fontFamily: "Roboto, system-ui",
+                        fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
                         minWidth: 0,
                     }}>
                         {internalToolbar}

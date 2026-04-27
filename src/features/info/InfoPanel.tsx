@@ -471,16 +471,6 @@ export function InfoPanel(props: InfoPanelProps) {
 						<Text size="xs" c="dimmed">ID: {String(props.rootNode.pmId)}</Text>
 					</Stack>
 				</Group>
-				{props.onClose && (
-					<ActionIcon
-						variant="subtle"
-						color="gray"
-						onClick={props.onClose}
-						aria-label="Close panel"
-					>
-						<IconX size={18} />
-					</ActionIcon>
-				)}
 			</Group>
 			<Divider orientation="horizontal" />
 

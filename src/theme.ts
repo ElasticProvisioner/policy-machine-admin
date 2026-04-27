@@ -54,6 +54,7 @@ const red: MantineColorsTuple = [
 
 
 export const lightTheme = createTheme({
+  fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
   colors: {
     violet,
     blue,
@@ -71,6 +72,7 @@ export const lightTheme = createTheme({
 });
 
 export const darkTheme = createTheme({
+  fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
   colors: {
     violet,
     blue,
