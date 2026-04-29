@@ -54,8 +54,9 @@ export function NodeIcon({type, size = 16, style}: NodeIconProps) {
 			<span
 				style={{
 					borderRadius: '22%',
-					backgroundColor: color,
-					color: 'white',
+					backgroundColor: 'transparent',
+					border: `2px solid ${color}`,
+					color: color,
 					fontSize,
 					fontWeight: 'bold',
 					width: sizeStr,
@@ -67,6 +68,7 @@ export function NodeIcon({type, size = 16, style}: NodeIconProps) {
 					whiteSpace: 'nowrap',
 					minWidth: sizeStr,
 					flexShrink: 0,
+					boxSizing: 'border-box',
 					...style,
 				}}
 			>

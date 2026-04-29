@@ -479,9 +479,11 @@ export function Dashboard() {
                                 height: 44,
                                 borderLeft: !uaTreeCollapsed ? `5px solid ${theme.colors[theme.primaryColor][9]}` : 'none',
                                 borderRadius: 0,
+                                color: 'var(--mantine-color-gray-6)',
                             }}
                         >
-                            <span style={{fontWeight: 700, fontSize: 20}}>UA</span>
+                            <NodeIcon type="UA" size={28} />
+                            {/*<span style={{fontWeight: 700, fontSize: 20}}>UA</span>*/}
                         </ActionIcon>
                     </Tooltip>
 
@@ -496,6 +498,7 @@ export function Dashboard() {
                                     height: 44,
                                     borderLeft: !bottomPanelCollapsed ? `5px solid ${theme.colors[theme.primaryColor][9]}` : 'none',
                                     borderRadius: 0,
+                                    color: 'var(--mantine-color-gray-6)',
                                 }}
                             >
                                 <IconInfoSquareRounded size={26} />
@@ -655,6 +658,7 @@ export function Dashboard() {
                                             height: 44,
                                             borderRight: isActive ? `5px solid ${theme.colors[theme.primaryColor][9]}` : 'none',
                                             borderRadius: 0,
+                                            color: 'var(--mantine-color-gray-6)',
                                         }}
                                         size={26}
                                     >

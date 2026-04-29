@@ -2,7 +2,7 @@ import React from 'react';
 import { BaseOperationIcon, OperationIconProps } from './BaseOperationIcon';
 
 export const ResourceOperationIcon: React.FC<OperationIconProps> = (props) => {
-  const bgFillColor = props.filled ? (props.fillColor || 'var(--mantine-primary-color-filled)') : 'white';
+  const bgFillColor = props.filled ? (props.fillColor || 'var(--mantine-primary-color-filled)') : 'none';
 
   return (
     <BaseOperationIcon {...props}>
