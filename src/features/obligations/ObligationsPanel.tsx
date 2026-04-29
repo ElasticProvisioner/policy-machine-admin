@@ -7,11 +7,9 @@ import {
     Stack,
     Center,
     Button,
-    ThemeIcon,
-    Tooltip,
-    UnstyledButton
+    Select
 } from "@mantine/core";
-import {IconTrash, IconCalendarCode, IconUser} from "@tabler/icons-react";
+import {IconTrash, IconCalendarCode} from "@tabler/icons-react";
 import { Obligation } from "@/shared/api/pdp.types";
 import * as QueryService from "@/shared/api/pdp_query.api";
 import * as AdjudicationService from "@/shared/api/pdp_adjudication.api";
@@ -26,7 +24,6 @@ export function ObligationsPanel() {
     const [error, setError] = useState<string | null>(null);
     const [selectedObligation, setSelectedObligation] = useState<string | null>(null);
     const [isCreatingNew, setIsCreatingNew] = useState(false);
-    const [filterText, setFilterText] = useState("");
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
     // Fetch obligations on component mount
@@ -128,117 +125,30 @@ export function ObligationsPanel() {
         }
     }, []);
 
-    // Filter obligations based on search text
-    const filteredObligations = useMemo(() => {
-        if (!filterText.trim()) {
-            return obligations;
-        }
-
-        const searchText = filterText.toLowerCase();
-        return obligations.filter(obligation =>
-            obligation.name.toLowerCase().includes(searchText)
-        );
-    }, [obligations, filterText]);
-
     // Get the currently selected obligation object
     const currentObligation = useMemo(() => {
         if (!selectedObligation) {return null;}
         return obligations.find(o => o.name === selectedObligation) || null;
     }, [obligations, selectedObligation]);
 
-    const listHeader = obligations.length > 0 ? (
-        <Text size="xs" c="dimmed" fw={500} tt="uppercase" px="xs" mb={6}>
-            {filteredObligations.length} of {obligations.length} obligation{obligations.length !== 1 ? 's' : ''}
-        </Text>
-    ) : undefined;
-
-    const listContent = (
-        <Box p="xs">
-            {obligations.length === 0 && !isCreatingNew ? (
-                <Center py="xl">
-                    <Stack align="center" gap="xs">
-                        <ThemeIcon variant="light" color="gray" size="xl" radius="xl">
-                            <IconCalendarCode size={20} />
-                        </ThemeIcon>
-                        <Text size="sm" c="dimmed">No obligations found</Text>
-                    </Stack>
-                </Center>
-            ) : null}
-
-            {obligations.length > 0 && filteredObligations.length === 0 && filterText.trim() ? (
-                <Center py="lg">
-                    <Text size="sm" c="dimmed">No matches found</Text>
-                </Center>
-            ) : null}
-
-            <Stack gap={4}>
-                {filteredObligations.map((obligation) => {
-                    const isActive = selectedObligation === obligation.name && !isCreatingNew;
-                    return (
-                        <Tooltip
-                            key={obligation.name}
-                            label={obligation.name}
-                            position="right"
-                            withArrow
-                            openDelay={400}
-                        >
-                        <UnstyledButton
-                            onClick={() => handleSelectObligation(obligation.name)}
-                            style={{
-                                borderRadius: 'var(--mantine-radius-sm)',
-                                padding: '8px 10px',
-                                backgroundColor: isActive
-                                    ? 'var(--mantine-primary-color-light)'
-                                    : 'transparent',
-                                border: isActive
-                                    ? '1px solid var(--mantine-primary-color-light-color)'
-                                    : '1px solid transparent',
-                                transition: 'background-color 150ms ease, border-color 150ms ease',
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!isActive) {
-                                    e.currentTarget.style.backgroundColor = 'var(--mantine-color-default-hover)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!isActive) {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                }
-                            }}
-                        >
-                            <Group gap="sm" wrap="nowrap">
-                                <ThemeIcon
-                                    variant={isActive ? 'filled' : 'light'}
-                                    color={isActive ? 'var(--mantine-primary-color-filled)' : 'gray'}
-                                    size="md"
-                                    radius="sm"
-                                >
-                                    <IconCalendarCode size={14} />
-                                </ThemeIcon>
-                                <Box style={{ flex: 1, minWidth: 0 }}>
-                                    <Text
-                                        size="sm"
-                                        fw={isActive ? 600 : 500}
-                                        truncate
-                                    >
-                                        {obligation.name}
-                                    </Text>
-                                    {obligation.author?.name && (
-                                        <Group gap={4} mt={2}>
-                                            <IconUser size={10} color="var(--mantine-color-dimmed)" />
-                                            <Text size="xs" c="dimmed" truncate>
-                                                {obligation.author.name}
-                                            </Text>
-                                        </Group>
-                                    )}
-                                </Box>
-                            </Group>
-                        </UnstyledButton>
-                        </Tooltip>
-                    );
-                })}
-            </Stack>
-        </Box>
+    const aboveDetail = (
+        <Select
+            searchable
+            clearable
+            placeholder="Search..."
+            data={obligations.map(o => o.name).sort((a, b) => a.localeCompare(b))}
+            value={selectedObligation}
+            onChange={(v) => {
+                if (v) {
+                    handleSelectObligation(v);
+                } else {
+                    setSelectedObligation(null);
+                    setIsCreatingNew(false);
+                }
+            }}
+            comboboxProps={{ withinPortal: false }}
+            style={{ width: '100%' }}
+        />
     );
 
     const detailContent = isCreatingNew ? (
@@ -298,12 +208,9 @@ export function ObligationsPanel() {
             title="Obligations"
             onCreateClick={handleCreateNew}
             isCreatingNew={isCreatingNew}
-            filterText={filterText}
-            onFilterChange={setFilterText}
             onRefresh={fetchObligations}
             refreshDisabled={loading}
-            listHeader={listHeader}
-            listContent={listContent}
+            aboveDetail={aboveDetail}
             detailContent={detailContent}
             loading={loading}
             error={error}

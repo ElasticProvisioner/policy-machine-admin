@@ -475,10 +475,10 @@ export function InfoPanel(props: InfoPanelProps) {
 			<Divider orientation="horizontal" />
 
 			{/* Content sections - vertical layout for descendants and associations */}
-			<Box style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0, overflow: 'hidden' }}>
+			<Box style={{ flex: 1, display: 'flex', flexDirection: 'row', gap: 0, minHeight: 0, overflow: 'hidden', alignItems: 'stretch' }}>
 				{/* Descendants Tree / Assignment Panel */}
 				{props.rootNode.type !== "PC" && (
-					<Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+					<Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', minWidth: 0, paddingRight: 8 }}>
 						<>
 							<Group gap="xs" align="center" mb={8}>
 								<Text size="md" fw={600}>Descendants</Text>
@@ -593,8 +593,7 @@ export function InfoPanel(props: InfoPanelProps) {
 
 					return (
 						<>
-						<Divider orientation="horizontal" />
-						<Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+						<Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', minWidth: 0, paddingLeft: 8 }}>
 							<Group gap="xs" align="center" mb={8}>
 								<Text size="md" fw={600}>Associations</Text>
 								{!inlineAssoc && canHaveIncoming && (

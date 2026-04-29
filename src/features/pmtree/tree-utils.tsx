@@ -64,7 +64,6 @@ export function NodeIcon({type, size = 16, style}: NodeIconProps) {
 					textAlign: 'center',
 					justifyContent: 'center',
 					alignItems: 'center',
-					overflow: 'hidden',
 					whiteSpace: 'nowrap',
 					minWidth: sizeStr,
 					flexShrink: 0,

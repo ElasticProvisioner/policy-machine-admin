@@ -116,7 +116,7 @@ export function PMNode({ node, style, tree, clickHandlers, direction, treeDataAt
 		const associationType = node.data.associationDetails?.type;
 
 		return (
-			<div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0, whiteSpace: 'nowrap' }}>
+			<div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0, whiteSpace: 'nowrap', }}>
 				{isAssociation && associationType === 'outgoing' && (
 					<OutgoingAssociationIcon
 						color={theme.colors.green[9]}

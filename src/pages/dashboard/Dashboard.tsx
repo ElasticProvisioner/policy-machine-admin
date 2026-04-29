@@ -42,8 +42,8 @@ export function Dashboard() {
     const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
     // Resize state
-    const [leftWidth, setLeftWidth] = useState<number>(() => {
-        const s = localStorage.getItem('dashboard-left-width');
+    const [opsWidth, setOpsWidth] = useState<number>(() => {
+        const s = localStorage.getItem('dashboard-ops-width');
         return s ? parseInt(s, 10) : 320;
     });
     const [uaTreeWidth, setUaTreeWidth] = useState<number>(() => {
@@ -60,13 +60,13 @@ export function Dashboard() {
     const [uaTreeCollapsed, setUaTreeCollapsed] = useState<boolean>(() =>
         localStorage.getItem('dashboard-ua-tree-collapsed') === 'true'
     );
-    const [rightPanelCollapsed, setRightPanelCollapsed] = useState<boolean>(() =>
-        localStorage.getItem('dashboard-right-panel-collapsed') === 'true'
+    const [bottomPanelCollapsed, setBottomPanelCollapsed] = useState<boolean>(() =>
+        localStorage.getItem('dashboard-bottom-panel-collapsed') !== 'false'
     );
 
-    // Bottom panel state
-    const [bottomPanelActiveComp, setBottomPanelActiveComp] = useState<RightPanelComponent | null>(() => {
-        const s = localStorage.getItem('dashboard-bottom-panel-comp');
+    // Right panel state (Operations)
+    const [rightActiveComp, setRightActiveComp] = useState<RightPanelComponent | null>(() => {
+        const s = localStorage.getItem('dashboard-right-active-comp');
         return (s as RightPanelComponent) || null;
     });
     const [bottomPanelHeight, setBottomPanelHeight] = useState<number>(() => {
@@ -93,8 +93,8 @@ export function Dashboard() {
         if (!containerRef.current) return;
         const ro = new ResizeObserver((entries) => {
             const { width: containerW, height: containerH } = entries[0].contentRect;
-            const maxLeft = containerW - 324;
-            setLeftWidth((prev) => (prev > maxLeft ? Math.max(150, maxLeft) : prev));
+            const maxOps = containerW - 234; // leave at least 150px for left column + sidebars/dividers
+            setOpsWidth((prev) => (prev > maxOps ? Math.max(200, maxOps) : prev));
             const maxBottom = containerH - 100;
             setBottomPanelHeight((prev) => Math.min(prev, Math.max(120, maxBottom)));
         });
@@ -140,34 +140,34 @@ export function Dashboard() {
 
     const switchTab = useCallback((tabId: string) => setActiveTabId(tabId), []);
 
-    // Resize handlers
+    // Resize handlers (ops panel is on the right; dragging divider right shrinks it)
     const handleDividerPointerDown = useCallback(
         (e: React.PointerEvent<HTMLDivElement>) => {
             e.preventDefault();
             dividerRef.current?.setPointerCapture(e.pointerId);
-            dragState.current = { startX: e.clientX, startWidth: leftWidth };
+            dragState.current = { startX: e.clientX, startWidth: opsWidth };
         },
-        [leftWidth]
+        [opsWidth]
     );
 
     const handleDividerPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
         if (!dragState.current) return;
         const containerW = containerRef.current?.offsetWidth ?? Infinity;
         const newW = Math.min(
-            Math.max(150, dragState.current.startWidth + e.clientX - dragState.current.startX),
-            containerW - 324, // keep at least 320px for right panel + 4px divider
+            Math.max(200, dragState.current.startWidth - (e.clientX - dragState.current.startX)),
+            containerW - 234,
         );
-        setLeftWidth(newW);
+        setOpsWidth(newW);
     }, []);
 
     const handleDividerPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
         if (!dragState.current) return;
         const containerW = containerRef.current?.offsetWidth ?? Infinity;
         const finalW = Math.min(
-            Math.max(150, dragState.current.startWidth + e.clientX - dragState.current.startX),
-            containerW - 324,
+            Math.max(200, dragState.current.startWidth - (e.clientX - dragState.current.startX)),
+            containerW - 234,
         );
-        localStorage.setItem('dashboard-left-width', String(finalW));
+        localStorage.setItem('dashboard-ops-width', String(finalW));
         dragState.current = null;
     }, []);
 
@@ -186,21 +186,21 @@ export function Dashboard() {
         const containerW = containerRef.current?.offsetWidth ?? Infinity;
         const newW = Math.min(
             Math.max(150, uaDragState.current.startWidth + e.clientX - uaDragState.current.startX),
-            containerW - leftWidth - 324 - 8,
+            containerW - opsWidth - 234,
         );
         setUaTreeWidth(newW);
-    }, [leftWidth]);
+    }, [opsWidth]);
 
     const handleUaDividerPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
         if (!uaDragState.current) return;
         const containerW = containerRef.current?.offsetWidth ?? Infinity;
         const finalW = Math.min(
             Math.max(150, uaDragState.current.startWidth + e.clientX - uaDragState.current.startX),
-            containerW - leftWidth - 324 - 8,
+            containerW - opsWidth - 234,
         );
         localStorage.setItem('dashboard-ua-tree-width', String(finalW));
         uaDragState.current = null;
-    }, [leftWidth]);
+    }, [opsWidth]);
 
     // Collapse helpers
     const collapseUaTree = useCallback(() => {
@@ -211,27 +211,27 @@ export function Dashboard() {
         setUaTreeCollapsed(false);
         localStorage.setItem('dashboard-ua-tree-collapsed', 'false');
     }, []);
-    const collapseRight = useCallback(() => {
-        setRightPanelCollapsed(true);
-        localStorage.setItem('dashboard-right-panel-collapsed', 'true');
+    const collapseBottom = useCallback(() => {
+        setBottomPanelCollapsed(true);
+        localStorage.setItem('dashboard-bottom-panel-collapsed', 'true');
     }, []);
-    const expandRight = useCallback(() => {
-        setRightPanelCollapsed(false);
-        localStorage.setItem('dashboard-right-panel-collapsed', 'false');
+    const expandBottom = useCallback(() => {
+        setBottomPanelCollapsed(false);
+        localStorage.setItem('dashboard-bottom-panel-collapsed', 'false');
     }, []);
 
-    const toggleBottomPanel = useCallback((comp: RightPanelComponent) => {
-        setBottomPanelActiveComp((prev) => {
+    const toggleRightPanel = useCallback((comp: RightPanelComponent) => {
+        setRightActiveComp((prev) => {
             const next = prev === comp ? null : comp;
-            if (next === null) localStorage.removeItem('dashboard-bottom-panel-comp');
-            else localStorage.setItem('dashboard-bottom-panel-comp', next);
+            if (next === null) localStorage.removeItem('dashboard-right-active-comp');
+            else localStorage.setItem('dashboard-right-active-comp', next);
             return next;
         });
     }, []);
 
-    const closeBottomPanel = useCallback(() => {
-        setBottomPanelActiveComp(null);
-        localStorage.removeItem('dashboard-bottom-panel-comp');
+    const closeRightPanel = useCallback(() => {
+        setRightActiveComp(null);
+        localStorage.removeItem('dashboard-right-active-comp');
     }, []);
 
     const handleBottomDividerPointerDown = useCallback(
@@ -269,7 +269,7 @@ export function Dashboard() {
     const handleAssociateWithUANode = useCallback(() => {
         if (!rightClickedNode || !selectedUANode || rightClickedNode.pmId == null) return;
         setContextMenuOpened(false);
-        if (rightPanelCollapsed) expandRight();
+        if (bottomPanelCollapsed) expandBottom();
         const node = rightClickedNode;
         openTab({
             id: `node-info-${node.pmId}`,
@@ -283,7 +283,7 @@ export function Dashboard() {
                 nonce: Date.now(),
             },
         });
-    }, [rightClickedNode, selectedUANode, rightPanelCollapsed, expandRight, openTab]);
+    }, [rightClickedNode, selectedUANode, bottomPanelCollapsed, expandBottom, openTab]);
 
     // Event handlers
     const handleNodeRightClick = (node: TreeNode, event: React.MouseEvent) => {
@@ -314,6 +314,7 @@ export function Dashboard() {
                 component: 'NODE_INFO',
                 nodeInfo: node,
             });
+            if (bottomPanelCollapsed) expandBottom();
         }
         setContextMenuOpened(false);
     };
@@ -350,6 +351,7 @@ export function Dashboard() {
                 icon: <IconBan size={18} />,
                 component: RightPanelComponent.CREATE_PROHIBITION,
             });
+            if (bottomPanelCollapsed) expandBottom();
         }
         setContextMenuOpened(false);
     };
@@ -483,28 +485,22 @@ export function Dashboard() {
                         </ActionIcon>
                     </Tooltip>
 
-                    {/* Bottom: feature panel toggle buttons */}
-                    <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 15, paddingBottom: 40 }}>
-                        {TOOLBAR_CONFIG.map((c) => {
-                            const isActive = bottomPanelActiveComp === c.comp;
-                            return (
-                                <Tooltip key={c.comp} label={c.label} position="right">
-                                    <ActionIcon
-                                        variant="subtle"
-                                        onClick={() => toggleBottomPanel(c.comp)}
-                                        style={{
-                                            width: '100%',
-                                            height: 44,
-                                            borderLeft: isActive ? `5px solid ${theme.colors[theme.primaryColor][9]}` : 'none',
-                                            borderRadius: 0,
-                                        }}
-                                        size={26}
-                                    >
-                                        {React.cloneElement(c.tabIcon as React.ReactElement, { size: 26 })}
-                                    </ActionIcon>
-                                </Tooltip>
-                            );
-                        })}
+                    {/* Bottom: info panel toggle button */}
+                    <div style={{ marginTop: 'auto', paddingBottom: 40 }}>
+                        <Tooltip label={bottomPanelCollapsed ? 'Show Info Panel' : 'Hide Info Panel'} position="right">
+                            <ActionIcon
+                                variant="subtle"
+                                onClick={bottomPanelCollapsed ? expandBottom : collapseBottom}
+                                style={{
+                                    width: '100%',
+                                    height: 44,
+                                    borderLeft: !bottomPanelCollapsed ? `5px solid ${theme.colors[theme.primaryColor][9]}` : 'none',
+                                    borderRadius: 0,
+                                }}
+                            >
+                                <IconInfoSquareRounded size={26} />
+                            </ActionIcon>
+                        </Tooltip>
                     </div>
                 </div>
                 {/* Column wrapper: top panels + bottom panel */}
@@ -553,9 +549,7 @@ export function Dashboard() {
                         {/* Main PMTree panel */}
                         <div
                             style={{
-                                width: rightPanelCollapsed ? undefined : leftWidth,
-                                flex: rightPanelCollapsed ? 1 : undefined,
-                                flexShrink: 0,
+                                flex: 1,
                                 minWidth: 150,
                                 height: '100%',
                                 overflow: 'hidden',
@@ -572,45 +566,17 @@ export function Dashboard() {
                             />
                         </div>
 
-                        {/* Main ↔ Right drag divider */}
-                        {!rightPanelCollapsed && (
-                            <div
-                                ref={dividerRef}
-                                onPointerDown={handleDividerPointerDown}
-                                onPointerMove={handleDividerPointerMove}
-                                onPointerUp={handleDividerPointerUp}
-                                style={{
-                                    width: 2,
-                                    flexShrink: 0,
-                                    cursor: 'col-resize',
-                                    backgroundColor: theme.other.intellijDivider as string,
-                                    userSelect: 'none',
-                                    touchAction: 'none',
-                                }}
-                            />
-                        )}
-
-                        {/* Right panel */}
-                        {!rightPanelCollapsed && (
-                            <div style={{ flex: 1, minWidth: 0, height: '100%', overflow: 'hidden', backgroundColor: 'var(--mantine-color-gray-0)' }}>
-                                <OperationsPanel
-                                    activeComp={bottomPanelActiveComp}
-                                    selectedNodes={selectedNodes}
-                                    onClose={closeBottomPanel}
-                                />
-                            </div>
-                        )}
                     </div>
 
                     {/* Bottom drag divider */}
-                    {bottomPanelActiveComp !== null && (
+                    {!bottomPanelCollapsed && (
                         <div
                             ref={bottomDividerRef}
                             onPointerDown={handleBottomDividerPointerDown}
                             onPointerMove={handleBottomDividerPointerMove}
                             onPointerUp={handleBottomDividerPointerUp}
                             style={{
-                                height: 4,
+                                height: 2,
                                 flexShrink: 0,
                                 cursor: 'row-resize',
                                 backgroundColor: theme.other.intellijDivider as string,
@@ -621,7 +587,7 @@ export function Dashboard() {
                     )}
 
                     {/* Bottom panel */}
-                    {bottomPanelActiveComp !== null && (
+                    {!bottomPanelCollapsed && (
                         <div style={{ height: bottomPanelHeight, flexShrink: 0, overflow: 'hidden', backgroundColor: 'var(--mantine-color-gray-0)' }}>
                             <NodeInfoPanel
                                 tabs={tabs}
@@ -633,6 +599,35 @@ export function Dashboard() {
                         </div>
                     )}
                 </div>
+
+                {/* Left column ↔ Ops Panel drag divider */}
+                {rightActiveComp !== null && (
+                    <div
+                        ref={dividerRef}
+                        onPointerDown={handleDividerPointerDown}
+                        onPointerMove={handleDividerPointerMove}
+                        onPointerUp={handleDividerPointerUp}
+                        style={{
+                            width: 2,
+                            flexShrink: 0,
+                            cursor: 'col-resize',
+                            backgroundColor: theme.other.intellijDivider as string,
+                            userSelect: 'none',
+                            touchAction: 'none',
+                        }}
+                    />
+                )}
+
+                {/* Operations Panel — full height */}
+                {rightActiveComp !== null && (
+                    <div style={{ width: opsWidth, flexShrink: 0, height: '100%', overflow: 'hidden', backgroundColor: 'var(--mantine-color-gray-0)' }}>
+                        <OperationsPanel
+                            activeComp={rightActiveComp}
+                            selectedNodes={selectedNodes}
+                            onClose={closeRightPanel}
+                        />
+                    </div>
+                )}
 
                 {/* Right sidebar */}
                 <div
@@ -646,20 +641,29 @@ export function Dashboard() {
                         borderLeft: `1px solid ${theme.other.intellijDivider as string}`,
                     }}
                 >
-                    <Tooltip label={rightPanelCollapsed ? 'Show Info Panel' : 'Hide Info Panel'} position="left">
-                        <ActionIcon
-                            variant="subtle"
-                            onClick={rightPanelCollapsed ? expandRight : collapseRight}
-                            style={{
-                                width: '100%',
-                                height: 44,
-                                borderRight: !rightPanelCollapsed ? `5px solid ${theme.colors[theme.primaryColor][9]}` : 'none',
-                                borderRadius: 0,
-                            }}
-                        >
-                            <IconInfoSquareRounded size={26} />
-                        </ActionIcon>
-                    </Tooltip>
+                    {/* Feature panel toggle buttons */}
+                    <div style={{display: 'flex', flexDirection: 'column', gap: 15}}>
+                        {TOOLBAR_CONFIG.map((c) => {
+                            const isActive = rightActiveComp === c.comp;
+                            return (
+                                <Tooltip key={c.comp} label={c.label} position="left">
+                                    <ActionIcon
+                                        variant="subtle"
+                                        onClick={() => toggleRightPanel(c.comp)}
+                                        style={{
+                                            width: '100%',
+                                            height: 44,
+                                            borderRight: isActive ? `5px solid ${theme.colors[theme.primaryColor][9]}` : 'none',
+                                            borderRadius: 0,
+                                        }}
+                                        size={26}
+                                    >
+                                        {React.cloneElement(c.tabIcon as React.ReactElement, { size: 26 })}
+                                    </ActionIcon>
+                                </Tooltip>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 

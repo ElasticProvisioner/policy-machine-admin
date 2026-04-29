@@ -21,13 +21,16 @@ interface ListDetailPanelProps {
     onCreateClick?: () => void;
     isCreatingNew?: boolean;
 
-    // List (left panel)
-    filterText: string;
-    onFilterChange: (text: string) => void;
+    // List (left panel) — omit listContent to use above-detail layout
+    filterText?: string;
+    onFilterChange?: (text: string) => void;
     onRefresh: () => void;
     refreshDisabled?: boolean;
-    listContent: ReactNode;
+    listContent?: ReactNode;
     listHeader?: ReactNode;
+
+    // Above-detail content (replaces left panel when listContent is absent)
+    aboveDetail?: ReactNode;
 
     // Details (right panel)
     detailContent: ReactNode;
@@ -49,6 +52,7 @@ export function ListDetailPanel({
     refreshDisabled,
     listContent,
     listHeader,
+    aboveDetail,
     detailContent,
     loading,
     loadingMessage,
@@ -96,43 +100,67 @@ export function ListDetailPanel({
                 </Group>
             </Box>
 
-            {/* Content - List and Details side by side */}
-            <Box style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
-                {/* Left Panel - List */}
-                <Box style={{ width: '30%', borderRight: '1px solid var(--mantine-color-default-border)', display: 'flex', flexDirection: 'column' }}>
-                    <Box p="sm">
-                        <Group gap="xs">
-                            <TextInput
-                                placeholder={`Filter ${title.toLowerCase()}...`}
-                                value={filterText}
-                                onChange={(event) => onFilterChange(event.currentTarget.value)}
-                                leftSection={<IconSearch size={16} />}
-                                size="sm"
-                                style={{ flex: 1 }}
-                            />
-                            <ActionIcon
-                                variant="light"
-                                color="var(--mantine-primary-color-filled)"
-                                onClick={onRefresh}
-                                disabled={refreshDisabled}
-                            >
-                                <IconRefresh size={20} />
-                            </ActionIcon>
-                        </Group>
+            {/* Content */}
+            {listContent ? (
+                /* Side-by-side layout when list is present */
+                <Box style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+                    {/* Left Panel - List */}
+                    <Box style={{ width: '30%', borderRight: '1px solid var(--mantine-color-default-border)', display: 'flex', flexDirection: 'column' }}>
+                        <Box p="sm">
+                            <Group gap="xs">
+                                {onFilterChange && (
+                                    <TextInput
+                                        placeholder={`Filter ${title.toLowerCase()}...`}
+                                        value={filterText ?? ""}
+                                        onChange={(event) => onFilterChange(event.currentTarget.value)}
+                                        leftSection={<IconSearch size={16} />}
+                                        size="sm"
+                                        style={{ flex: 1 }}
+                                    />
+                                )}
+                                <ActionIcon
+                                    variant="light"
+                                    color="var(--mantine-primary-color-filled)"
+                                    onClick={onRefresh}
+                                    disabled={refreshDisabled}
+                                >
+                                    <IconRefresh size={20} />
+                                </ActionIcon>
+                            </Group>
+                        </Box>
+                        <Box style={{ flex: 1, overflowY: 'auto' }}>
+                            {listHeader}
+                            {listContent}
+                        </Box>
                     </Box>
-
-                    {/* List Content */}
-                    <Box style={{ flex: 1, overflowY: 'auto' }}>
-                        {listHeader}
-                        {listContent}
+                    {/* Right Panel - Details */}
+                    <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        {detailContent}
                     </Box>
                 </Box>
-
-                {/* Right Panel - Details */}
+            ) : (
+                /* Single-column layout: above-detail content stacked on top of detail */
                 <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    {detailContent}
+                    {aboveDetail && (
+                        <Box p="sm" style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}>
+                            <Group gap="xs">
+                                <ActionIcon
+                                    variant="light"
+                                    color="var(--mantine-primary-color-filled)"
+                                    onClick={onRefresh}
+                                    disabled={refreshDisabled}
+                                >
+                                    <IconRefresh size={20} />
+                                </ActionIcon>
+                                <Box style={{ flex: 1 }}>{aboveDetail}</Box>
+                            </Group>
+                        </Box>
+                    )}
+                    <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        {detailContent}
+                    </Box>
                 </Box>
-            </Box>
+            )}
         </Box>
     );
 }

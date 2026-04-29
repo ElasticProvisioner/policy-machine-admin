@@ -7,7 +7,7 @@ import {
     Stack,
     Center,
     Button,
-    NavLink
+    Select
 } from "@mantine/core";
 import { IconBan } from "@tabler/icons-react";
 import { ProhibitionDetails } from "./ProhibitionDetails";
@@ -26,7 +26,6 @@ export function ProhibitionsPanel({ selectedNodes }: ProhibitionsPanelProps) {
     const [error, setError] = useState<string | null>(null);
     const [selectedProhibition, setSelectedProhibition] = useState<string | null>(null);
     const [isCreatingNew, setIsCreatingNew] = useState(false);
-    const [filterText, setFilterText] = useState("");
 
     // Fetch prohibitions on component mount
     const fetchProhibitions = useCallback(async () => {
@@ -85,48 +84,30 @@ export function ProhibitionsPanel({ selectedNodes }: ProhibitionsPanelProps) {
         }
     }, [selectedProhibition]);
 
-    // Filter prohibitions based on search text
-    const filteredProhibitions = useMemo(() => {
-        if (!filterText.trim()) {
-            return prohibitions;
-        }
-
-        const searchText = filterText.toLowerCase();
-        return prohibitions.filter(prohibition =>
-            prohibition.name.toLowerCase().includes(searchText)
-        );
-    }, [prohibitions, filterText]);
-
     // Get the currently selected prohibition object
     const currentProhibition = useMemo(() => {
         if (!selectedProhibition) return null;
         return prohibitions.find(p => p.name === selectedProhibition) || null;
     }, [prohibitions, selectedProhibition]);
 
-    const listContent = (
-        <>
-            {prohibitions.length === 0 && !isCreatingNew ? (
-                <Box p="md">
-                    <Text size="sm" c="dimmed">No prohibitions found.</Text>
-                </Box>
-            ) : null}
-
-            {prohibitions.length > 0 && filteredProhibitions.length === 0 && filterText.trim() ? (
-                <Box p="md">
-                    <Text size="sm" c="dimmed">No matches found.</Text>
-                </Box>
-            ) : null}
-
-            {filteredProhibitions.map((prohibition) => (
-                <NavLink
-                    key={prohibition.name}
-                    label={prohibition.name}
-                    leftSection={<IconBan size={16} />}
-                    active={selectedProhibition === prohibition.name && !isCreatingNew}
-                    onClick={() => handleSelectProhibition(prohibition.name)}
-                />
-            ))}
-        </>
+    const aboveDetail = (
+        <Select
+            searchable
+            clearable
+            placeholder="Search..."
+            data={prohibitions.map(p => p.name).sort((a, b) => a.localeCompare(b))}
+            value={selectedProhibition}
+            onChange={(v) => {
+                if (v) {
+                    handleSelectProhibition(v);
+                } else {
+                    setSelectedProhibition(null);
+                    setIsCreatingNew(false);
+                }
+            }}
+            comboboxProps={{ withinPortal: false }}
+            style={{ width: '100%' }}
+        />
     );
 
     const detailContent = isCreatingNew ? (
@@ -171,11 +152,9 @@ export function ProhibitionsPanel({ selectedNodes }: ProhibitionsPanelProps) {
             title="Prohibitions"
             onCreateClick={handleCreateNew}
             isCreatingNew={isCreatingNew}
-            filterText={filterText}
-            onFilterChange={setFilterText}
             onRefresh={fetchProhibitions}
             refreshDisabled={loading}
-            listContent={listContent}
+            aboveDetail={aboveDetail}
             detailContent={detailContent}
             loading={loading}
             error={error}

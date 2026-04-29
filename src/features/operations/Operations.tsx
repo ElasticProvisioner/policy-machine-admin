@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { IconEdit, IconFunction, IconPlus, IconShieldCog, IconTrash, IconX } from "@tabler/icons-react";
-import { ActionIcon, Box, Button, Center, Code, Divider, Group, Loader, Modal, NavLink, NumberInput, ScrollArea, Stack, Switch, Text, Textarea, TextInput, Title } from "@mantine/core";
+import { ActionIcon, Box, Button, Center, Code, Divider, Group, Loader, Modal, NumberInput, ScrollArea, Select, Stack, Switch, Text, Textarea, TextInput, Title } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { AdminOperationIcon } from "@/components/icons/AdminOperationIcon";
 import { FunctionIcon } from "@/components/icons/FunctionIcon";
@@ -100,12 +100,15 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
   const [loading, setLoading] = useState(false);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [selectedOperation, setSelectedOperation] = useState<string | null>(null);
-  const [filterText, setFilterText] = useState("");
   const [resourceARModalOpen, setResourceARModalOpen] = useState(false);
   const [resourceAccessRights, setResourceAccessRights] = useState<string[]>([]);
   const [resourceARLoading, setResourceARLoading] = useState(false);
   const [resourceARSaving, setResourceARSaving] = useState(false);
   const [newAccessRight, setNewAccessRight] = useState("");
+  const [jsonInput, setJsonInput] = useState("{}");
+  const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [returnValue, setReturnValue] = useState<any>(null);
 
   // Update mode when initialMode prop changes
   useEffect(() => {
@@ -259,23 +262,90 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
     loadSignatures();
   }, [loadSignatures]);
 
-  // Filter signatures based on search text
-  const filteredSignatures = useMemo(() => {
-    if (!filterText.trim()) {
-      return signatures;
-    }
-
-    const searchText = filterText.toLowerCase();
-    return signatures.filter(sig =>
-      sig.name?.toLowerCase().includes(searchText)
-    );
-  }, [signatures, filterText]);
-
   // Get the currently selected signature object
   const currentSignature = useMemo(() => {
     if (!selectedOperation) return null;
     return signatures.find(s => s.name === selectedOperation) || null;
   }, [signatures, selectedOperation]);
+
+  useEffect(() => {
+    if (!currentSignature) {
+      setJsonInput("{}");
+      setReturnValue(null);
+      return;
+    }
+    const defaultValues: Record<string, any> = {};
+    for (const param of currentSignature.params ?? []) {
+      if (param.name) {
+        defaultValues[param.name] = createDefaultValueForParamType(getParamType(param));
+      }
+    }
+    setJsonInput(JSON.stringify(defaultValues, null, 2));
+    setReturnValue(null);
+  }, [currentSignature]);
+
+  const handleExecute = useCallback(async () => {
+    if (!currentSignature?.name) {
+      notifications.show({ color: "red", title: "No operation selected", message: "Select an operation before executing." });
+      return;
+    }
+    let parsed: Record<string, any>;
+    try {
+      parsed = JSON.parse(jsonInput);
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        throw new Error('Input must be a JSON object');
+      }
+    } catch (e) {
+      notifications.show({ color: "red", title: "Invalid JSON", message: e instanceof Error ? e.message : "Failed to parse JSON" });
+      return;
+    }
+    const args: Record<string, any> = {};
+    for (const param of currentSignature.params ?? []) {
+      const value = parsed[param.name];
+      const conversion = convertValueForSubmission(param.name, getParamType(param), value);
+      if (conversion.error) {
+        notifications.show({ color: "red", title: "Invalid parameter value", message: conversion.error });
+        return;
+      }
+      if (conversion.include) {
+        args[param.name] = conversion.value;
+      }
+    }
+    setSubmitting(true);
+    try {
+      const response = mode === "resource"
+        ? await AdjudicationService.adjudicateResourceOperation(currentSignature.name, args)
+        : await AdjudicationService.adjudicateOperation(currentSignature.name, args);
+      if (response?.value !== undefined && response?.value !== null) {
+        setReturnValue(unwrapValue(response.value));
+      } else {
+        setReturnValue(null);
+      }
+      notifications.show({ color: "green", title: "Execution succeeded", message: `${mode.charAt(0).toUpperCase() + mode.slice(1)} operation "${currentSignature.name}" executed successfully.` });
+    } catch (error) {
+      setReturnValue(null);
+      notifications.show({ color: "red", title: "Execution failed", message: (error as Error).message });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [currentSignature, jsonInput, mode]);
+
+  const handleDeleteOperation = useCallback(async () => {
+    if (!currentSignature?.name) {
+      notifications.show({ color: "red", title: "No operation selected", message: "Select an operation before deleting." });
+      return;
+    }
+    setDeleting(true);
+    try {
+      await AdjudicationService.deleteOperation(currentSignature.name);
+      notifications.show({ color: "green", title: "Operation Deleted", message: `${getOperationTypeLabel(mode).slice(0, -1)} "${currentSignature.name}" has been deleted successfully.` });
+      handleDeleteSuccess();
+    } catch (error) {
+      notifications.show({ color: "red", title: "Delete failed", message: (error as Error).message });
+    } finally {
+      setDeleting(false);
+    }
+  }, [currentSignature, mode, getOperationTypeLabel, handleDeleteSuccess]);
 
   const headerButtons = mode === "resource" ? (
     <Button
@@ -288,30 +358,24 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
     </Button>
   ) : undefined;
 
-  const listContent = (
-    <>
-      {signatures.length === 0 && !isCreatingNew ? (
-        <Box p="md">
-          <Text size="sm" c="dimmed">No {getOperationTypeLabel(mode).toLowerCase()} found.</Text>
-        </Box>
-      ) : null}
-
-      {signatures.length > 0 && filteredSignatures.length === 0 && filterText.trim() ? (
-        <Box p="md">
-          <Text size="sm" c="dimmed">No matches found.</Text>
-        </Box>
-      ) : null}
-
-      {filteredSignatures.map((signature) => (
-        <NavLink
-          key={signature.name}
-          label={signature.name || "(unnamed)"}
-          leftSection={getOperationIcon(mode)}
-          active={selectedOperation === signature.name && !isCreatingNew}
-          onClick={() => handleSelectOperation(signature.name || "")}
-        />
-      ))}
-    </>
+  const aboveDetail = (
+    <Select
+      searchable
+      clearable
+      placeholder="Search..."
+      data={signatures.map(s => s.name || "(unnamed)").sort((a, b) => a.localeCompare(b))}
+      value={selectedOperation}
+      onChange={(v) => {
+        if (v) {
+          handleSelectOperation(v);
+        } else {
+          setSelectedOperation(null);
+          setIsCreatingNew(false);
+        }
+      }}
+      comboboxProps={{ withinPortal: false }}
+      style={{ width: '100%' }}
+    />
   );
 
   const detailContent = isCreatingNew ? (
@@ -332,17 +396,41 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
     </Box>
   ) : currentSignature ? (
     <Box p="md" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Group mb="md">
-        {getOperationIcon(mode, 24)}
-        <Title order={5}>{currentSignature.name}</Title>
+      <Group mb="md" justify="space-between">
+        <Group>
+          {getOperationIcon(mode, 24)}
+          <Title order={5}>{currentSignature.name}</Title>
+        </Group>
+        <Group gap="xs">
+          <Button
+            leftSection={<IconTrash size={16} />}
+            onClick={handleDeleteOperation}
+            loading={deleting}
+            disabled={submitting}
+            color="red"
+            variant="outline"
+            size="xs"
+          >
+            Delete
+          </Button>
+          <Button
+            leftSection={<IconFunction size={16} />}
+            onClick={handleExecute}
+            loading={submitting}
+            disabled={deleting}
+            size="xs"
+          >
+            Execute
+          </Button>
+        </Group>
       </Group>
       <Divider />
-      <Box style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+      <Box style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <OperationDetails
           signature={currentSignature}
-          mode={mode}
-          getOperationTypeLabel={getOperationTypeLabel}
-          onDelete={handleDeleteSuccess}
+          jsonInput={jsonInput}
+          setJsonInput={setJsonInput}
+          returnValue={returnValue}
         />
       </Box>
     </Box>
@@ -362,11 +450,9 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
         onCreateClick={handleCreateNew}
         isCreatingNew={isCreatingNew}
         headerButtons={headerButtons}
-        filterText={filterText}
-        onFilterChange={setFilterText}
         onRefresh={loadSignatures}
         refreshDisabled={loading}
-        listContent={listContent}
+        aboveDetail={aboveDetail}
         detailContent={detailContent}
         loading={loading}
       />
@@ -453,201 +539,62 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
 
 interface OperationDetailsProps {
   signature: Signature;
-  mode: OperationType;
-  getOperationTypeLabel: (type: OperationType) => string;
-  onDelete: () => void;
+  jsonInput: string;
+  setJsonInput: (v: string) => void;
+  returnValue: any;
 }
 
-function OperationDetails({ signature, mode, getOperationTypeLabel, onDelete }: OperationDetailsProps) {
-  const [jsonInput, setJsonInput] = useState("{}");
-  const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [returnValue, setReturnValue] = useState<any>(null);
-
-  useEffect(() => {
-    const defaultValues: Record<string, any> = {};
-    for (const param of signature.params ?? []) {
-      if (param.name) {
-        defaultValues[param.name] = createDefaultValueForParamType(getParamType(param));
-      }
-    }
-    setJsonInput(JSON.stringify(defaultValues, null, 2)); // Pretty print with 2 spaces
-    setReturnValue(null); // Clear return value when signature changes
-  }, [signature]);
-
-
-  const handleExecute = async () => {
-    if (!signature.name) {
-      notifications.show({
-        color: "red",
-        title: "No operation selected",
-        message: "Select an operation before executing.",
-      });
-      return;
-    }
-
-    let parsed: Record<string, any>;
-    try {
-      parsed = JSON.parse(jsonInput);
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        throw new Error('Input must be a JSON object');
-      }
-    } catch (e) {
-      notifications.show({
-        color: "red",
-        title: "Invalid JSON",
-        message: e instanceof Error ? e.message : "Failed to parse JSON",
-      });
-      return;
-    }
-
-    const args: Record<string, any> = {};
-    for (const param of signature.params ?? []) {
-      const value = parsed[param.name];
-      const conversion = convertValueForSubmission(
-        param.name,
-        getParamType(param),
-        value,
-      );
-      if (conversion.error) {
-        notifications.show({
-          color: "red",
-          title: "Invalid parameter value",
-          message: conversion.error,
-        });
-        return;
-      }
-      if (conversion.include) {
-        args[param.name] = conversion.value;
-      }
-    }
-
-    setSubmitting(true);
-    try {
-      const response = mode === "resource"
-        ? await AdjudicationService.adjudicateResourceOperation(signature.name, args)
-        : await AdjudicationService.adjudicateOperation(signature.name, args);
-
-      // Store return value if present, unwrapping the protobuf Value structure
-      if (response?.value !== undefined && response?.value !== null) {
-        const unwrapped = unwrapValue(response.value);
-        setReturnValue(unwrapped);
-      } else {
-        setReturnValue(null);
-      }
-
-      notifications.show({
-        color: "green",
-        title: "Execution succeeded",
-        message: `${mode.charAt(0).toUpperCase() + mode.slice(1)} operation "${signature.name}" executed successfully.`,
-      });
-    } catch (error) {
-      setReturnValue(null);
-      notifications.show({
-        color: "red",
-        title: "Execution failed",
-        message: (error as Error).message,
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!signature.name) {
-      notifications.show({
-        color: "red",
-        title: "No operation selected",
-        message: "Select an operation before deleting.",
-      });
-      return;
-    }
-
-    setDeleting(true);
-    try {
-      await AdjudicationService.deleteOperation(signature.name);
-
-      notifications.show({
-        color: "green",
-        title: "Operation Deleted",
-        message: `${getOperationTypeLabel(mode).slice(0, -1)} "${signature.name}" has been deleted successfully.`,
-      });
-
-      // Reload the signatures list
-      onDelete();
-    } catch (error) {
-      notifications.show({
-        color: "red",
-        title: "Delete failed",
-        message: (error as Error).message,
-      });
-    } finally {
-      setDeleting(false);
-    }
-  };
-
+function OperationDetails({ signature, jsonInput, setJsonInput, returnValue }: OperationDetailsProps) {
+  const hasParams = (signature.params?.length ?? 0) > 0;
   return (
-    <Stack gap="sm" style={{ height: '100%', minHeight: 0 }}>
-      {(signature.params?.length ?? 0) > 0 ? (
-        <Box style={{ display: 'flex', flexDirection: 'row', height: '100%', gap: 'md' }}>
-          <Box style={{height: "100%", width: "30%", display: 'flex', flexDirection: 'column'}}>
-            <Title order={6}>Input Schema</Title>
-            <Code block style={{ flex: 1, minHeight: 0, whiteSpace: 'pre-wrap' }}>{generatePMLTypeSchemaString(signature.params ?? [])}</Code>
-          </Box>
-          <Box style={{ backgroundColor: "green", height: "100%", width: "70%"}}>
-            <Textarea
-              label="Input JSON"
-              value={jsonInput}
-              onChange={(e) => setJsonInput(e.currentTarget.value)}
-              style={{ height: '100%' }}
-            />
-            <Group mt="mb" justify="flex-end" wrap="wrap">
-              <Button
-                leftSection={<IconTrash size={16} />}
-                onClick={handleDelete}
-                loading={deleting}
-                disabled={submitting}
-                color="red"
-                variant="outline"
-              >
-                Delete
-              </Button>
-              <Button
-                leftSection={<IconFunction size={16} />}
-                onClick={handleExecute}
-                loading={submitting}
-                disabled={deleting}
-              >
-                Execute
-              </Button>
-            </Group>
-          </Box>
-        </Box>
-      ) : (
-        <Box py="sm">
-          <Text size="sm" c="dimmed">
-            This {getOperationTypeLabel(mode).toLowerCase().replace(/s$/, '')} has no parameters.
-          </Text>
-        </Box>
-      )}
-      {returnValue !== null && returnValue !== undefined && (
-        <Box mt="md" p="md" style={{
-          border: '1px solid var(--mantine-color-gray-3)',
-          borderRadius: '4px',
-          backgroundColor: 'var(--mantine-color-gray-0)'
-        }}>
-          <Title order={6} mb="xs">Return Value</Title>
-          <Code block style={{
-            maxHeight: '300px',
-            overflow: 'auto',
-            fontSize: '12px',
-            whiteSpace: 'pre-wrap'
-          }}>
+    <Box style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Top row: inputs */}
+      <Box style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', gap: 8, overflow: 'hidden' }}>
+        {hasParams ? (
+          <>
+            <Box style={{ width: '30%', display: 'flex', flexDirection: 'column' }}>
+              <Text size="sm" fw={500} mb={2}>Input Schema</Text>
+              <Code block style={{ flex: 1, minHeight: 0, whiteSpace: 'pre-wrap', overflow: 'auto' }}>
+                {generatePMLTypeSchemaString(signature.params ?? [])}
+              </Code>
+            </Box>
+            <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Text size="sm" fw={500} mb={2}>Input JSON</Text>
+              <Textarea
+                value={jsonInput}
+                onChange={(e) => setJsonInput(e.currentTarget.value)}
+                style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+                styles={{
+                  wrapper: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
+                  input: { flex: 1, minHeight: 0, resize: 'none' },
+                }}
+              />
+            </Box>
+          </>
+        ) : (
+          <Text size="sm" c="dimmed" style={{ alignSelf: 'center' }}>This operation has no parameters.</Text>
+        )}
+      </Box>
+      {/* Bottom row: output (always visible) */}
+      <Box p="sm" style={{
+        flex: 1,
+        minHeight: 0,
+        border: '1px solid var(--mantine-color-gray-3)',
+        borderRadius: 4,
+        backgroundColor: 'var(--mantine-color-gray-0)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        <Text size="sm" fw={500} mb={2}>Output</Text>
+        {returnValue !== null && returnValue !== undefined ? (
+          <Code block style={{ flex: 1, minHeight: 0, overflow: 'auto', fontSize: '12px', whiteSpace: 'pre-wrap' }}>
             {JSON.stringify(returnValue, null, 2)}
           </Code>
-        </Box>
-      )}
-    </Stack>
+        ) : (
+          <Text size="sm" c="dimmed">No output</Text>
+        )}
+      </Box>
+    </Box>
   );
 }
 
