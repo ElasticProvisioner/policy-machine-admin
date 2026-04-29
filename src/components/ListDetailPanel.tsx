@@ -82,7 +82,7 @@ export function ListDetailPanel({
     return (
         <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
-            <Box p="sm" pb="sm" style={{borderBottom: "1px solid lightgrey"}}>
+            <Box p="sm" pb="sm">
                 <Group>
                     <Title order={4}>{title}</Title>
                     {onCreateClick && (
@@ -142,7 +142,7 @@ export function ListDetailPanel({
                 /* Single-column layout: above-detail content stacked on top of detail */
                 <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                     {aboveDetail && (
-                        <Box p="sm" style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}>
+                        <Box p="sm">
                             <Group gap="xs">
                                 <ActionIcon
                                     variant="light"

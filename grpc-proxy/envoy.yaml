@@ -20,9 +20,14 @@ static_resources:
               domains: ["*"]
               routes:
               - match:
+                  prefix: "/gov.nist.csd.pm.proto.v1.pdp.adjudication.ResourceAdjudicationService"
+                route:
+                  cluster: grpc_resource_backend
+                  timeout: 60s
+              - match:
                   prefix: "/"
                 route:
-                  cluster: grpc_backend
+                  cluster: grpc_admin_backend
                   timeout: 60s
               cors:
                 allow_origin_string_match:
@@ -43,14 +48,30 @@ static_resources:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
-  - name: grpc_backend
+  - name: grpc_resource_backend
     connect_timeout: 30s
     type: logical_dns
     dns_lookup_family: V4_ONLY
     http2_protocol_options: {}
     lb_policy: round_robin
     load_assignment:
-      cluster_name: grpc_backend
+      cluster_name: grpc_resource_backend
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: host.docker.internal
+                port_value: 50051
+
+  - name: grpc_admin_backend
+    connect_timeout: 30s
+    type: logical_dns
+    dns_lookup_family: V4_ONLY
+    http2_protocol_options: {}
+    lb_policy: round_robin
+    load_assignment:
+      cluster_name: grpc_admin_backend
       endpoints:
       - lb_endpoints:
         - endpoint:

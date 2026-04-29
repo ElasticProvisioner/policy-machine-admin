@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { IconEdit, IconFunction, IconPlus, IconShieldCog, IconTrash, IconX } from "@tabler/icons-react";
-import { ActionIcon, Box, Button, Center, Code, Divider, Group, Loader, Modal, NumberInput, ScrollArea, Select, Stack, Switch, Text, Textarea, TextInput, Title } from "@mantine/core";
+import { ActionIcon, Badge, Box, Button, Center, Code, Divider, Group, Loader, Modal, NumberInput, ScrollArea, Select, Stack, Switch, Text, Textarea, TextInput, Title } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { AdminOperationIcon } from "@/components/icons/AdminOperationIcon";
 import { FunctionIcon } from "@/components/icons/FunctionIcon";
@@ -109,6 +109,8 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [returnValue, setReturnValue] = useState<any>(null);
+  const [executionStatus, setExecutionStatus] = useState<"success" | "error" | null>(null);
+  const [executionError, setExecutionError] = useState<string | null>(null);
 
   // Update mode when initialMode prop changes
   useEffect(() => {
@@ -282,6 +284,8 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
     }
     setJsonInput(JSON.stringify(defaultValues, null, 2));
     setReturnValue(null);
+    setExecutionStatus(null);
+    setExecutionError(null);
   }, [currentSignature]);
 
   const handleExecute = useCallback(async () => {
@@ -312,6 +316,8 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
       }
     }
     setSubmitting(true);
+    setExecutionStatus(null);
+    setExecutionError(null);
     try {
       const response = mode === "resource"
         ? await AdjudicationService.adjudicateResourceOperation(currentSignature.name, args)
@@ -321,10 +327,11 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
       } else {
         setReturnValue(null);
       }
-      notifications.show({ color: "green", title: "Execution succeeded", message: `${mode.charAt(0).toUpperCase() + mode.slice(1)} operation "${currentSignature.name}" executed successfully.` });
+      setExecutionStatus("success");
     } catch (error) {
       setReturnValue(null);
-      notifications.show({ color: "red", title: "Execution failed", message: (error as Error).message });
+      setExecutionStatus("error");
+      setExecutionError((error as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -431,6 +438,8 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
           jsonInput={jsonInput}
           setJsonInput={setJsonInput}
           returnValue={returnValue}
+          executionStatus={executionStatus}
+          executionError={executionError}
         />
       </Box>
     </Box>
@@ -542,9 +551,11 @@ interface OperationDetailsProps {
   jsonInput: string;
   setJsonInput: (v: string) => void;
   returnValue: any;
+  executionStatus: "success" | "error" | null;
+  executionError: string | null;
 }
 
-function OperationDetails({ signature, jsonInput, setJsonInput, returnValue }: OperationDetailsProps) {
+function OperationDetails({ signature, jsonInput, setJsonInput, returnValue, executionStatus, executionError }: OperationDetailsProps) {
   const hasParams = (signature.params?.length ?? 0) > 0;
   return (
     <Box style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -585,8 +596,16 @@ function OperationDetails({ signature, jsonInput, setJsonInput, returnValue }: O
         display: 'flex',
         flexDirection: 'column',
       }}>
-        <Text size="sm" fw={500} mb={2}>Output</Text>
-        {returnValue !== null && returnValue !== undefined ? (
+        <Group gap="xs" mb={2}>
+          <Text size="sm" fw={500}>Output</Text>
+          {executionStatus === "success" && <Badge color="green" size="sm" variant="light">Success</Badge>}
+          {executionStatus === "error" && <Badge color="red" size="sm" variant="light">Error</Badge>}
+        </Group>
+        {executionStatus === "error" ? (
+          <Code block style={{ flex: 1, minHeight: 0, overflow: 'auto', fontSize: '12px', whiteSpace: 'pre-wrap', color: 'var(--mantine-color-red-7)' }}>
+            {executionError}
+          </Code>
+        ) : returnValue !== null && returnValue !== undefined ? (
           <Code block style={{ flex: 1, minHeight: 0, overflow: 'auto', fontSize: '12px', whiteSpace: 'pre-wrap' }}>
             {JSON.stringify(returnValue, null, 2)}
           </Code>
