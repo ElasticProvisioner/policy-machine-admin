@@ -274,7 +274,7 @@ export function Dashboard() {
         openTab({
             id: `node-info-${node.pmId}`,
             label: node.name,
-            icon: <NodeIcon type={node.type as NodeType} size={18} />,
+            icon: <NodeIcon type={node.type as NodeType} size={16} />,
             component: 'NODE_INFO',
             nodeInfo: node,
             startAssociation: {
@@ -310,7 +310,7 @@ export function Dashboard() {
             openTab({
                 id: `node-info-${pmId}`,
                 label: node.name,
-                icon: <NodeIcon type={node.type as NodeType} size={18} />,
+                icon: <NodeIcon type={node.type as NodeType} size={16} />,
                 component: 'NODE_INFO',
                 nodeInfo: node,
             });

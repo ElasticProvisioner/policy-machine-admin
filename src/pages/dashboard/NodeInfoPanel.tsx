@@ -319,7 +319,7 @@ export function NodeInfoPanel({
             {/* Tab bar */}
             <div
                 style={{
-                    height: 42,
+                    height: 32,
                     flexShrink: 0,
                     borderBottom: `1px solid ${theme.other.intellijDivider as string}`,
                     backgroundColor: 'var(--mantine-color-gray-0)',
