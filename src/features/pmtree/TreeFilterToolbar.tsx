@@ -1,8 +1,7 @@
 import React from 'react';
-import { ActionIcon, Tooltip, useMantineTheme } from '@mantine/core';
-import { AssociationDirection, IncomingAssociationIcon, OutgoingAssociationIcon, NodeIcon } from '@/features/pmtree/tree-utils';
+import { Tooltip, UnstyledButton } from '@mantine/core';
+import { AssociationDirection, IncomingAssociationIcon, OutgoingAssociationIcon } from '@/features/pmtree/tree-utils';
 import { NodeType } from '@/shared/api/pdp.types';
-import {ToolBarSection} from "@/features/pmtree/ToolBarSection";
 
 export interface TreeFilterConfig {
     nodeTypes: NodeType[];
@@ -17,86 +16,100 @@ export interface TreeFilterToolbarProps {
 
 const ALL_NODE_TYPES: NodeType[] = [NodeType.UA, NodeType.OA, NodeType.U, NodeType.O];
 
-export function TreeFilterToolbar({ filters, onFiltersChange }: TreeFilterToolbarProps) {
-    const theme = useMantineTheme();
+const NODE_TYPE_LABELS: Record<string, string> = {
+    [NodeType.UA]: 'User Attributes',
+    [NodeType.OA]: 'Object Attributes',
+    [NodeType.U]: 'Users',
+    [NodeType.O]: 'Objects',
+};
 
-    const handleNodeTypeToggle = async (nodeType: NodeType) => {
-        const newNodeTypes = filters.nodeTypes.includes(nodeType)
+// A rounded, monochrome "segmented" track. The toolbar intentionally avoids the
+// per-node-type colors used in the tree itself — repeating them here just turned
+// the toolbar into a second rainbow competing with the tree. Identity is carried
+// by the type letter; state is carried by fill, not hue.
+const TRACK: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 2,
+    padding: 3,
+    borderRadius: 999,
+    backgroundColor: 'var(--mantine-color-gray-1)',
+};
+
+function pillStyle(active: boolean): React.CSSProperties {
+    return {
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 26,
+        minWidth: 30,
+        paddingInline: 9,
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 600,
+        lineHeight: 1,
+        color: active ? 'var(--mantine-color-gray-8)' : 'var(--mantine-color-gray-5)',
+        backgroundColor: active ? 'var(--mantine-color-white)' : 'transparent',
+        boxShadow: active ? '0 1px 2px rgba(0,0,0,0.12)' : 'none',
+        transition: 'color 120ms ease, background-color 120ms ease, box-shadow 120ms ease',
+    };
+}
+
+export function TreeFilterToolbar({ filters, onFiltersChange }: TreeFilterToolbarProps) {
+    const handleNodeTypeToggle = (nodeType: NodeType) => {
+        const nodeTypes = filters.nodeTypes.includes(nodeType)
             ? filters.nodeTypes.filter((type) => type !== nodeType)
             : [...filters.nodeTypes, nodeType];
-
-        const newFilters = {
-            ...filters,
-            nodeTypes: newNodeTypes,
-        };
-
-        onFiltersChange(newFilters);
+        onFiltersChange({ ...filters, nodeTypes });
     };
 
-    const handleAssociationDirectionToggle = async (direction: AssociationDirection) => {
-        const newFilters =
+    const handleAssociationDirectionToggle = (direction: AssociationDirection) => {
+        onFiltersChange(
             direction === AssociationDirection.Incoming
-                ? {
-                    ...filters,
-                    showIncomingAssociations: !filters.showIncomingAssociations,
-                }
-                : {
-                    ...filters,
-                    showOutgoingAssociations: !filters.showOutgoingAssociations,
-                };
-
-        onFiltersChange(newFilters);
+                ? { ...filters, showIncomingAssociations: !filters.showIncomingAssociations }
+                : { ...filters, showOutgoingAssociations: !filters.showOutgoingAssociations }
+        );
     };
 
     return (
-        <ToolBarSection
-            title="Tree Filters"
-        >
-            {ALL_NODE_TYPES.map((nodeType) => (
-                <ActionIcon
-                    key={nodeType}
-                    variant="subtle"
-                    size="md"
-                    onClick={() => handleNodeTypeToggle(nodeType)}
-                    style={{
-                        opacity: filters.nodeTypes.includes(nodeType) ? 1 : 0.35,
-                    }}
-                >
-                    <NodeIcon type={nodeType} size={24} />
-                </ActionIcon>
-            ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={TRACK}>
+                {ALL_NODE_TYPES.map((nodeType) => {
+                    const active = filters.nodeTypes.includes(nodeType);
+                    return (
+                        <Tooltip key={nodeType} label={NODE_TYPE_LABELS[nodeType]} position="bottom" openDelay={300}>
+                            <UnstyledButton
+                                aria-pressed={active}
+                                onClick={() => handleNodeTypeToggle(nodeType)}
+                                style={pillStyle(active)}
+                            >
+                                {nodeType}
+                            </UnstyledButton>
+                        </Tooltip>
+                    );
+                })}
+            </div>
 
-            <Tooltip label="Show outgoing associations">
-                <ActionIcon
-                    variant="subtle"
-                    size="md"
-                    onClick={() => handleAssociationDirectionToggle(AssociationDirection.Outgoing)}
-                    style={{
-                        opacity: filters.showOutgoingAssociations ? 1 : 0.35,
-                    }}
-                >
-                    <OutgoingAssociationIcon
-                        size="22px"
-                        color={theme.colors.green[9]}
-                    />
-                </ActionIcon>
-            </Tooltip>
-
-            <Tooltip label="Show incoming associations">
-                <ActionIcon
-                    variant="subtle"
-                    size="md"
-                    onClick={() => handleAssociationDirectionToggle(AssociationDirection.Incoming)}
-                    style={{
-                        opacity: filters.showIncomingAssociations ? 1 : 0.35,
-                    }}
-                >
-                    <IncomingAssociationIcon
-                        size="22px"
-                        color={theme.colors.green[9]}
-                    />
-                </ActionIcon>
-            </Tooltip>
-        </ToolBarSection>
+            <div style={TRACK}>
+                <Tooltip label="Show outgoing associations" position="bottom" openDelay={300}>
+                    <UnstyledButton
+                        aria-pressed={filters.showOutgoingAssociations}
+                        onClick={() => handleAssociationDirectionToggle(AssociationDirection.Outgoing)}
+                        style={pillStyle(filters.showOutgoingAssociations)}
+                    >
+                        <OutgoingAssociationIcon size="18px" color="currentColor" />
+                    </UnstyledButton>
+                </Tooltip>
+                <Tooltip label="Show incoming associations" position="bottom" openDelay={300}>
+                    <UnstyledButton
+                        aria-pressed={filters.showIncomingAssociations}
+                        onClick={() => handleAssociationDirectionToggle(AssociationDirection.Incoming)}
+                        style={pillStyle(filters.showIncomingAssociations)}
+                    >
+                        <IncomingAssociationIcon size="18px" color="currentColor" />
+                    </UnstyledButton>
+                </Tooltip>
+            </div>
+        </div>
     );
 }

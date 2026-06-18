@@ -41,10 +41,16 @@ export interface InfoPanelProps {
 	rootNode: TreeNode;
 	onClose?: () => void;
 	startAssociation?: { direction: AssociationDirection; otherNode: TreeNode; nonce: number };
+	/**
+	 * "split" (default) lays Descendants and Associations side-by-side.
+	 * "stacked" places them one above the other — better for a narrow column.
+	 */
+	layout?: 'split' | 'stacked';
 }
 
 export function InfoPanel(props: InfoPanelProps) {
 	const theme = useMantineTheme();
+	const stacked = props.layout === 'stacked';
 
 	const [associationRootNodes, setAssociationRootNodes] = useState<TreeNode[]>([]);
 	const [descendantsNodes, setDescendantsNodes] = useState<TreeNode[]>([]);
@@ -461,7 +467,7 @@ export function InfoPanel(props: InfoPanelProps) {
 	const showAssociationEmptyState = associationRootNodes.length === 0;
 
 	return (
-		<Stack gap="xs" style={{ padding: "10px 20px 20px 20px", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", backgroundColor: "var(--mantine-color-gray-0)" }}>
+		<Stack gap="xs" style={{ padding: "10px 20px 20px 20px", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", backgroundColor: stacked ? "var(--mantine-color-white)" : "var(--mantine-color-gray-0)" }}>
 			{/* Compact Header - Icon spans both rows */}
 			<Group gap="sm" wrap="nowrap" justify="space-between">
 				<Group gap="sm" align="center" wrap="nowrap">
@@ -475,17 +481,17 @@ export function InfoPanel(props: InfoPanelProps) {
 			<Divider orientation="horizontal" />
 
 			{/* Content sections - vertical layout for descendants and associations */}
-			<Box style={{ flex: 1, display: 'flex', flexDirection: 'row', gap: 0, minHeight: 0, overflow: 'hidden', alignItems: 'stretch' }}>
+			<Box style={{ flex: 1, display: 'flex', flexDirection: stacked ? 'column' : 'row', gap: stacked ? 12 : 0, minHeight: 0, overflow: 'hidden', alignItems: 'stretch' }}>
 				{/* Descendants Tree / Assignment Panel */}
 				{props.rootNode.type !== "PC" && (
-					<Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', minWidth: 0, paddingRight: 8 }}>
+					<Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', minWidth: 0, paddingRight: stacked ? 0 : 8 }}>
 						<>
 							<Group gap="xs" align="center" mb={8}>
 								<Text size="md" fw={600}>Descendants</Text>
 								<Popover
 									opened={isAssignmentPickerOpen}
 									onClose={handleCancelAssignment}
-									position="bottom-start"
+									position="bottom"
 									width={520}
 									withArrow
 									shadow="md"
@@ -593,7 +599,7 @@ export function InfoPanel(props: InfoPanelProps) {
 
 					return (
 						<>
-						<Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', minWidth: 0, paddingLeft: 8 }}>
+						<Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', minWidth: 0, paddingLeft: stacked ? 0 : 8 }}>
 							<Group gap="xs" align="center" mb={8}>
 								<Text size="md" fw={600}>Associations</Text>
 								{!inlineAssoc && canHaveIncoming && (
@@ -635,7 +641,7 @@ export function InfoPanel(props: InfoPanelProps) {
 												<Popover
 													opened={inlineAssoc.isPicking}
 													onClose={handleClosePicker}
-													position="bottom-start"
+													position="bottom"
 													width={520}
 													withArrow
 													shadow="md"
@@ -709,7 +715,7 @@ export function InfoPanel(props: InfoPanelProps) {
 												<Popover
 													opened={inlineAssoc.isPicking}
 													onClose={handleClosePicker}
-													position="bottom-start"
+													position="bottom"
 													width={520}
 													withArrow
 													shadow="md"

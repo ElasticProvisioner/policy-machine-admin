@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { IconCheck, IconCircleArrowDownLeft, IconCircleArrowUpRight, IconDotsVertical, IconRefresh } from '@tabler/icons-react';
-import { ActionIcon, Divider, Group, Menu, Text, Tooltip, useMantineTheme } from '@mantine/core';
-import { AssociationDirection, IncomingAssociationIcon, NodeIcon, OutgoingAssociationIcon } from '@/features/pmtree/tree-utils';
+import { ActionIcon, Group, Menu, Text, Tooltip, useMantineTheme } from '@mantine/core';
+import { IncomingAssociationIcon, NodeIcon, OutgoingAssociationIcon } from '@/features/pmtree/tree-utils';
 import { NodeType } from '@/shared/api/pdp.types';
-import { ToolBarSection } from './ToolBarSection';
 import { TreeFilterToolbar } from './TreeFilterToolbar';
 import { TreeDirection, TreeFilterConfig } from './hooks/usePMTreeOperations';
 
@@ -179,7 +178,7 @@ export function PMTreeToolbar({
                                 <Menu.Item
                                     key="outgoing"
                                     leftSection={
-                                        <OutgoingAssociationIcon size="16px" color={theme.colors.green[9]} />
+                                        <OutgoingAssociationIcon size="16px" color={theme.colors.gray[6]} />
                                     }
                                     rightSection={
                                         filters.showOutgoingAssociations ? <IconCheck size={14} /> : null
@@ -197,7 +196,7 @@ export function PMTreeToolbar({
                                 <Menu.Item
                                     key="incoming"
                                     leftSection={
-                                        <IncomingAssociationIcon size="16px" color={theme.colors.green[9]} />
+                                        <IncomingAssociationIcon size="16px" color={theme.colors.gray[6]} />
                                     }
                                     rightSection={
                                         filters.showIncomingAssociations ? <IconCheck size={14} /> : null
@@ -257,14 +256,14 @@ export function PMTreeToolbar({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderBottom: `1px solid ${theme.other.intellijDivider as string}`,
-                backgroundColor: toolbarBg ?? theme.other.intellijToolbarBg as string,
-                padding: '2px 8px',
-                height: 60,
+                borderBottom: `1px solid var(--mantine-color-gray-2)`,
+                backgroundColor: toolbarBg ?? 'transparent',
+                padding: '0 10px',
+                height: 48,
                 overflow: 'hidden',
             }}
         >
-            <div style={{ display: 'flex', alignItems: 'center', flex: 1, overflow: 'hidden', minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, overflow: 'hidden', minWidth: 0 }}>
                 {/* Reset */}
                 {showReset && (
                     <div
@@ -274,14 +273,11 @@ export function PMTreeToolbar({
                             alignItems: 'center',
                         }}
                     >
-                        <div style={{ padding: '0 8px' }}>
-                            <ToolBarSection title="Reset">
-                                <ActionIcon variant="subtle" onClick={onReset}>
-                                    <IconRefresh size={26} color="black" />
-                                </ActionIcon>
-                            </ToolBarSection>
-                        </div>
-                        <Divider orientation="vertical" />
+                        <Tooltip label="Reset" position="bottom" openDelay={300}>
+                            <ActionIcon variant="subtle" color="gray" radius="xl" size="lg" onClick={onReset}>
+                                <IconRefresh size={20} />
+                            </ActionIcon>
+                        </Tooltip>
                     </div>
                 )}
 
@@ -294,14 +290,11 @@ export function PMTreeToolbar({
                             alignItems: 'center',
                         }}
                     >
-                        <div style={{ padding: '0 8px' }}>
-                            <ToolBarSection title="Create">
-                                <ActionIcon variant="subtle" size="md" onClick={onCreatePolicyClass}>
-                                    <NodeIcon type={NodeType.PC} size={24} />
-                                </ActionIcon>
-                            </ToolBarSection>
-                        </div>
-                        <Divider orientation="vertical" />
+                        <Tooltip label="Create policy class" position="bottom" openDelay={300}>
+                            <ActionIcon variant="subtle" color="gray" radius="xl" size="lg" onClick={onCreatePolicyClass}>
+                                <NodeIcon type={NodeType.PC} size={22} />
+                            </ActionIcon>
+                        </Tooltip>
                     </div>
                 )}
 
@@ -314,10 +307,7 @@ export function PMTreeToolbar({
                             alignItems: 'center',
                         }}
                     >
-                        <div style={{ padding: '0 8px' }}>
-                            {leftSection}
-                        </div>
-                        <Divider orientation="vertical" />
+                        {leftSection}
                     </div>
                 )}
 
@@ -330,10 +320,7 @@ export function PMTreeToolbar({
                             alignItems: 'center',
                         }}
                     >
-                        <div style={{ padding: '0 8px' }}>
-                            <TreeFilterToolbar filters={filters} onFiltersChange={onFiltersChange} />
-                        </div>
-                        <Divider orientation="vertical" />
+                        <TreeFilterToolbar filters={filters} onFiltersChange={onFiltersChange} />
                     </div>
                 )}
 
@@ -346,18 +333,24 @@ export function PMTreeToolbar({
                             alignItems: 'center',
                         }}
                     >
-                        <div style={{ padding: '0 8px' }}>
-                            <ToolBarSection title="Direction">
-                                <Group gap={0}>
-                                    {direction === 'ascendants' ? (
-                                        <IconCircleArrowUpRight />
-                                    ) : (
-                                        <IconCircleArrowDownLeft />
-                                    )}
-                                    <Text size="xs">{directionLabel}</Text>
-                                </Group>
-                            </ToolBarSection>
-                        </div>
+                        <Group
+                            gap={6}
+                            wrap="nowrap"
+                            style={{
+                                height: 32,
+                                paddingInline: 12,
+                                borderRadius: 999,
+                                backgroundColor: 'var(--mantine-color-gray-1)',
+                                color: 'var(--mantine-color-gray-7)',
+                            }}
+                        >
+                            {direction === 'ascendants' ? (
+                                <IconCircleArrowUpRight size={18} />
+                            ) : (
+                                <IconCircleArrowDownLeft size={18} />
+                            )}
+                            <Text size="xs" fw={600}>{directionLabel}</Text>
+                        </Group>
                     </div>
                 )}
 

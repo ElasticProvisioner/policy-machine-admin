@@ -1,20 +1,28 @@
 import React, { useState } from 'react';
-import { ActionIcon, ColorPicker, Popover, Title, Tooltip } from '@mantine/core';
-import { IconPalette } from '@tabler/icons-react';
+import { useAtom } from 'jotai';
+import { ActionIcon, ColorPicker, MantineProvider, Popover, Text, Title, Tooltip } from '@mantine/core';
+import { IconPalette, IconX } from '@tabler/icons-react';
 import { PMIcon } from '@/components/icons/PMIcon';
 import { UserMenu } from '@/features/user-menu/UserMenu';
+import { InfoPanel } from '@/features/info/InfoPanel';
+import { useTheme } from '@/shared/theme/ThemeContext';
 import { Dashboard2Sidebar } from './Dashboard2Sidebar';
 import { Dashboard2 } from './Dashboard2';
 import { Dashboard2Panel } from './Dashboard2Panel';
+import { selectedNodeAtom } from './dashboard2-atoms';
 
 export const SIDEBAR_EXPANDED_WIDTH = 220;
 export const SIDEBAR_COLLAPSED_WIDTH = 50;
+
+// Corner radius used by the main panel cards; reused as the default radius for
+// all Mantine components inside Dashboard2 so buttons/badges/inputs match.
+export const PANEL_RADIUS = 10;
 
 const CARD: React.CSSProperties = {
     flex: 1,
     minWidth: 0,
     backgroundColor: 'var(--mantine-color-white)',
-    borderRadius: 10,
+    borderRadius: PANEL_RADIUS,
     overflow: 'hidden',
     boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
     display: 'flex',
@@ -40,6 +48,8 @@ export function Dashboard2Page() {
     );
     const [activeId, setActiveId] = useState<string | null>(null);
     const [bgColor, setBgColor] = useState<string>('#e9ecef');
+    const [selectedNode, setSelectedNode] = useAtom(selectedNodeAtom);
+    const { theme, themeMode } = useTheme();
 
     const sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH;
 
@@ -52,6 +62,11 @@ export function Dashboard2Page() {
         setActiveId((prev) => (prev === id ? null : id));
 
     return (
+        <MantineProvider
+            theme={{ ...theme, defaultRadius: PANEL_RADIUS }}
+            defaultColorScheme={themeMode}
+            forceColorScheme={themeMode}
+        >
         <div
             style={{
                 height: '100vh',
@@ -133,10 +148,52 @@ export function Dashboard2Page() {
                     )}
 
                     <div style={CARD}>
-                        <Dashboard2 />
+                        <Dashboard2 leftPanelVisible={!!activeId} />
                     </div>
+
+                    {selectedNode && (
+                        <div style={{ ...CARD, flex: '0 0 33%' }}>
+                            <div
+                                style={{
+                                    padding: '14px 8px 12px 16px',
+                                    borderBottom: '1px solid var(--mantine-color-gray-2)',
+                                    flexShrink: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: 8,
+                                }}
+                            >
+                                <Text
+                                    size="xs"
+                                    fw={700}
+                                    style={{
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.07em',
+                                        color: 'var(--mantine-color-gray-6)',
+                                        lineHeight: '20px',
+                                    }}
+                                >
+                                    Node Info
+                                </Text>
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="gray"
+                                    size="sm"
+                                    onClick={() => setSelectedNode(null)}
+                                    style={{ marginBlock: -2 }}
+                                >
+                                    <IconX size={16} />
+                                </ActionIcon>
+                            </div>
+                            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                                <InfoPanel rootNode={selectedNode} layout="stacked" onClose={() => setSelectedNode(null)} />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
+        </MantineProvider>
     );
 }
