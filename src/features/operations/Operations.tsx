@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import Editor from "@monaco-editor/react";
 import { IconEdit, IconFunction, IconPlus, IconShieldCog, IconTrash, IconX } from "@tabler/icons-react";
-import { ActionIcon, Badge, Box, Button, Center, Code, Divider, Group, Loader, Modal, NumberInput, ScrollArea, Select, Stack, Switch, Text, Textarea, TextInput, Title } from "@mantine/core";
+import { ActionIcon, Badge, Box, Button, Center, Code, Divider, Group, Loader, Modal, NumberInput, ScrollArea, Select, Stack, Switch, Text, TextInput, Title } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { useTheme } from "@/shared/theme/ThemeContext";
 import { AdminOperationIcon } from "@/components/icons/AdminOperationIcon";
 import { FunctionIcon } from "@/components/icons/FunctionIcon";
 import { QueryOperationIcon } from "@/components/icons/QueryOperationIcon";
@@ -356,7 +358,6 @@ export function Operations({ initialMode = "admin" }: OperationsProps) {
 
   const headerButtons = mode === "resource" ? (
     <Button
-      variant="filled"
       color="var(--mantine-primary-color-filled)"
       onClick={handleOpenResourceARModal}
       leftSection={<IconEdit size={18} />}
@@ -556,6 +557,8 @@ interface OperationDetailsProps {
 }
 
 function OperationDetails({ signature, jsonInput, setJsonInput, returnValue, executionStatus, executionError }: OperationDetailsProps) {
+  const { themeMode } = useTheme();
+  const monacoTheme = themeMode === 'dark' ? 'vs-dark' : 'vs-light';
   const hasParams = (signature.params?.length ?? 0) > 0;
   return (
     <Box style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -565,21 +568,40 @@ function OperationDetails({ signature, jsonInput, setJsonInput, returnValue, exe
           <>
             <Box style={{ width: '30%', display: 'flex', flexDirection: 'column' }}>
               <Text size="sm" fw={500} mb={2}>Input Schema</Text>
-              <Code block style={{ flex: 1, minHeight: 0, whiteSpace: 'pre-wrap', overflow: 'auto' }}>
+              <Code block style={{ flex: 1, minHeight: 0, whiteSpace: 'pre', overflow: 'auto' }}>
                 {generatePMLTypeSchemaString(signature.params ?? [])}
               </Code>
             </Box>
             <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <Text size="sm" fw={500} mb={2}>Input JSON</Text>
-              <Textarea
-                value={jsonInput}
-                onChange={(e) => setJsonInput(e.currentTarget.value)}
-                style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
-                styles={{
-                  wrapper: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
-                  input: { flex: 1, minHeight: 0, resize: 'none' },
+              <Box
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  border: '1px solid var(--mantine-color-gray-3)',
+                  borderRadius: 4,
+                  overflow: 'hidden',
                 }}
-              />
+              >
+                <Editor
+                  height="100%"
+                  language="json"
+                  value={jsonInput}
+                  onChange={(value) => setJsonInput(value || '')}
+                  theme={monacoTheme}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 13,
+                    lineNumbers: 'on',
+                    lineNumbersMinChars: 3,
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    tabSize: 2,
+                    formatOnPaste: true,
+                    wordWrap: 'off',
+                  }}
+                />
+              </Box>
             </Box>
           </>
         ) : (
@@ -606,9 +628,23 @@ function OperationDetails({ signature, jsonInput, setJsonInput, returnValue, exe
             {executionError}
           </Code>
         ) : returnValue !== null && returnValue !== undefined ? (
-          <Code block style={{ flex: 1, minHeight: 0, overflow: 'auto', fontSize: '12px', whiteSpace: 'pre-wrap' }}>
-            {JSON.stringify(returnValue, null, 2)}
-          </Code>
+          <Box style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <Editor
+              height="100%"
+              language="json"
+              value={JSON.stringify(returnValue, null, 2)}
+              theme={monacoTheme}
+              options={{
+                readOnly: true,
+                minimap: { enabled: false },
+                fontSize: 12,
+                lineNumbers: 'on',
+                lineNumbersMinChars: 3,
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+              }}
+            />
+          </Box>
         ) : (
           <Text size="sm" c="dimmed">No output</Text>
         )}

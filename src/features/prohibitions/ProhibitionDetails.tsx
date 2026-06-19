@@ -562,7 +562,6 @@ export function ProhibitionDetails({
                 <>
                   <Button
                       color="red"
-                      variant="filled"
                       loading={isSubmitting}
                       onClick={handleDelete}
                   >

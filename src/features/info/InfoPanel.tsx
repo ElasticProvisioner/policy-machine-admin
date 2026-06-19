@@ -16,6 +16,7 @@ import { AssociationDirection, IncomingAssociationIcon, OutgoingAssociationIcon,
 import { Node, NODE_TYPES, NodePrivilegeInfo, NodeType } from "@/shared/api/pdp.types";
 import * as QueryService from "@/shared/api/pdp_query.api";
 import * as AdjudicationService from "@/shared/api/pdp_adjudication.api";
+import { PANEL_RADIUS } from "@/theme";
 import { AssociationModal } from "./AssociationModal";
 import { AccessRightsTree } from "@/components/access-rights";
 
@@ -499,7 +500,7 @@ export function InfoPanel(props: InfoPanelProps) {
 									<Popover.Target>
 										<Box style={{ display: 'inline-block' }}>
 											<Tooltip label="Assign To">
-												<Button size="xs" variant="filled" leftSection={<IconPlus size={20} />} rightSection={<IconArrowRight size={20} />} onClick={handleStartAssignment} />
+												<Button size="xs" leftSection={<IconPlus size={20} />} rightSection={<IconArrowRight size={20} />} onClick={handleStartAssignment} />
 											</Tooltip>
 										</Box>
 									</Popover.Target>
@@ -562,11 +563,11 @@ export function InfoPanel(props: InfoPanelProps) {
 									</Popover.Dropdown>
 								</Popover>
 								<Tooltip label="Deassign">
-									<Button size="xs" color="red" variant="filled" leftSection={<IconTrash size={20} />} rightSection={<IconArrowRight size={20} />} onClick={handleDeassignSelected}
+									<Button size="xs" color="red" leftSection={<IconTrash size={20} />} rightSection={<IconArrowRight size={20} />} onClick={handleDeassignSelected}
 										style={{ visibility: isSelectedNodeRoot && selectedDescendantNode ? 'visible' : 'hidden' }} />
 								</Tooltip>
 							</Group>
-							<Box style={{ flex: 1, backgroundColor: theme.other.intellijContentBg, border: '1px solid var(--mantine-color-gray-3)', borderRadius: '4px', minHeight: 0, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+							<Box style={{ flex: 1, backgroundColor: theme.other.intellijContentBg, border: '1px solid var(--mantine-color-gray-3)', borderRadius: PANEL_RADIUS, minHeight: 0, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 								<PMTree
 									key={`descendants-${descendantsNodes.length}-${descendantsNodes.map(n => n.id).join('-')}`}
 									direction="descendants"
@@ -604,12 +605,12 @@ export function InfoPanel(props: InfoPanelProps) {
 								<Text size="md" fw={600}>Associations</Text>
 								{!inlineAssoc && canHaveIncoming && (
 									<Tooltip label="Create INCOMING association">
-										<Button size="xs" variant="filled" color={theme.colors.green[9]} leftSection={<IconPlus size={20} />} rightSection={<IncomingAssociationIcon size="20px" />} onClick={() => handleStartAssociation(AssociationDirection.Incoming)} />
+										<Button size="xs" color={theme.colors.green[9]} leftSection={<IconPlus size={20} />} rightSection={<IncomingAssociationIcon size="20px" />} onClick={() => handleStartAssociation(AssociationDirection.Incoming)} />
 									</Tooltip>
 								)}
 								{!inlineAssoc && canHaveOutgoing && (
 									<Tooltip label="Create OUTGOING association">
-										<Button size="xs" variant="filled" color={theme.colors.green[9]} leftSection={<IconPlus size={20} />} rightSection={<OutgoingAssociationIcon size="20px" />} onClick={() => handleStartAssociation(AssociationDirection.Outgoing)} />
+										<Button size="xs" color={theme.colors.green[9]} leftSection={<IconPlus size={20} />} rightSection={<OutgoingAssociationIcon size="20px" />} onClick={() => handleStartAssociation(AssociationDirection.Outgoing)} />
 									</Tooltip>
 								)}
 							</Group>
@@ -622,7 +623,7 @@ export function InfoPanel(props: InfoPanelProps) {
 									display: 'flex',
 									flexDirection: 'column',
 									border: '1px solid var(--mantine-color-gray-3)',
-									borderRadius: '4px',
+									borderRadius: PANEL_RADIUS,
 									overflow: 'hidden',
 									backgroundColor: 'var(--mantine-color-gray-0)',
 								}}>
@@ -811,7 +812,7 @@ export function InfoPanel(props: InfoPanelProps) {
 										flex: 1,
 										minHeight: 0,
 										border: '1px solid var(--mantine-color-gray-3)',
-										borderRadius: '4px',
+										borderRadius: PANEL_RADIUS,
 										display: 'flex',
 										minWidth: 0,
 										height: '100%',

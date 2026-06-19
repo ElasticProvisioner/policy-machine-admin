@@ -1,10 +1,21 @@
 import React, { useEffect, useState } from 'react';
+import { useAtomValue } from 'jotai';
 import { Center, Loader, Text } from '@mantine/core';
 import { PMTree, TreeFilterConfig } from '@/features/pmtree';
 import { NodeType } from '@/shared/api/pdp.types';
 import { TreeNode, sortTreeNodes, transformNodeToTreeNode } from '@/features/pmtree/tree-utils';
 import * as QueryService from '@/shared/api/pdp_query.api';
 import { withCriticalRetry } from '@/lib/retry-utils';
+import { ProhibitionsPanel } from '@/features/prohibitions';
+import { ObligationsPanel } from '@/features/obligations/ObligationsPanel';
+import { Operations } from '@/features/operations';
+import { ListDetailChromeContext } from '@/components/ListDetailPanel';
+import { selectedNodeAtom } from './dashboard2-atoms';
+
+// Render ListDetailPanel-based left panels with the section-style header that
+// matches the main panel's "Policy Classes" header. User Attributes doesn't use
+// ListDetailPanel, so it keeps its own title.
+const SECTION_CHROME = { sectionHeader: true };
 
 const UA_TREE_FILTERS: TreeFilterConfig = {
     nodeTypes: [NodeType.PC, NodeType.UA, NodeType.U],
@@ -106,22 +117,47 @@ function UaTreePanel() {
     );
 }
 
+function renderPanelContent(activeId: string, selectedNode: TreeNode | null): React.ReactNode {
+    switch (activeId) {
+        case 'ua-tree':
+            return <UaTreePanel />;
+        case 'prohibitions':
+            return <ProhibitionsPanel selectedNodes={selectedNode ? [selectedNode] : undefined} />;
+        case 'obligations':
+            return <ObligationsPanel />;
+        case 'admin-operations':
+            return <Operations initialMode="admin" />;
+        case 'resource-operations':
+            return <Operations initialMode="resource" />;
+        case 'queries':
+            return <Operations initialMode="query" />;
+        case 'routines':
+            return <Operations initialMode="routine" />;
+        case 'functions':
+            return <Operations initialMode="function" />;
+        default:
+            return (
+                <div style={{ color: 'var(--mantine-color-dimmed)', fontSize: 14, paddingTop: 32, textAlign: 'center', padding: '32px 24px 24px' }}>
+                    {activeId} panel
+                    <br />
+                    <span style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
+                        Replace this with your panel content.
+                    </span>
+                </div>
+            );
+    }
+}
+
 export function Dashboard2Panel({ activeId, onClose }: Props) {
+    const selectedNode = useAtomValue(selectedNodeAtom);
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             {/* Panel content */}
             <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                {activeId === 'ua-tree' ? (
-                    <UaTreePanel />
-                ) : (
-                    <div style={{ color: 'var(--mantine-color-dimmed)', fontSize: 14, paddingTop: 32, textAlign: 'center', padding: '32px 24px 24px' }}>
-                        {activeId} panel
-                        <br />
-                        <span style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
-                            Replace this with your panel content.
-                        </span>
-                    </div>
-                )}
+                <ListDetailChromeContext.Provider value={SECTION_CHROME}>
+                    {renderPanelContent(activeId, selectedNode)}
+                </ListDetailChromeContext.Provider>
             </div>
         </div>
     );

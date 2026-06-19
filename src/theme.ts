@@ -53,6 +53,10 @@ const red: MantineColorsTuple = [
 ]
 
 
+// Corner radius used by the main panel cards across the app; reused as the
+// default radius for Mantine components so buttons/badges/inputs match.
+export const PANEL_RADIUS = 10;
+
 export const lightTheme = createTheme({
   fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
   colors: {

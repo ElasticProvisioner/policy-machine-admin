@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useAtom } from 'jotai';
-import { ActionIcon, ColorPicker, MantineProvider, Popover, Text, Title, Tooltip } from '@mantine/core';
+import { ActionIcon, Button, ColorPicker, MantineProvider, Popover, Text, Title, Tooltip } from '@mantine/core';
 import { IconPalette, IconX } from '@tabler/icons-react';
 import { PMIcon } from '@/components/icons/PMIcon';
 import { UserMenu } from '@/features/user-menu/UserMenu';
 import { InfoPanel } from '@/features/info/InfoPanel';
 import { useTheme } from '@/shared/theme/ThemeContext';
+import { PANEL_RADIUS } from '@/theme';
 import { Dashboard2Sidebar } from './Dashboard2Sidebar';
 import { Dashboard2 } from './Dashboard2';
 import { Dashboard2Panel } from './Dashboard2Panel';
@@ -14,9 +15,8 @@ import { selectedNodeAtom } from './dashboard2-atoms';
 export const SIDEBAR_EXPANDED_WIDTH = 220;
 export const SIDEBAR_COLLAPSED_WIDTH = 50;
 
-// Corner radius used by the main panel cards; reused as the default radius for
-// all Mantine components inside Dashboard2 so buttons/badges/inputs match.
-export const PANEL_RADIUS = 10;
+// Re-exported for existing consumers; canonical definition lives in '@/theme'.
+export { PANEL_RADIUS };
 
 const CARD: React.CSSProperties = {
     flex: 1,
@@ -63,7 +63,17 @@ export function Dashboard2Page() {
 
     return (
         <MantineProvider
-            theme={{ ...theme, defaultRadius: PANEL_RADIUS }}
+            theme={{
+                ...theme,
+                defaultRadius: PANEL_RADIUS,
+                // Make every button in Dashboard2 match the "New Policy Class"
+                // button by default. Buttons that set an explicit variant (e.g.
+                // destructive red, subtle "Cancel") keep their own styling.
+                components: {
+                    ...theme.components,
+                    Button: Button.extend({ defaultProps: { variant: 'light', size: 'xs' } }),
+                },
+            }}
             defaultColorScheme={themeMode}
             forceColorScheme={themeMode}
         >

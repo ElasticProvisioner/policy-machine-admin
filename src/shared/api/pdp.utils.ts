@@ -37,7 +37,7 @@ export function transformAssociation(association: Model.Association): Associatio
 }
 
 export function argsToValueMap(args: Record<string, any>): { [key: string]: Model.Value } {
-  console.log('[gRPC] argsToValueMap args:', JSON.stringify(args));
+  console.log('[gRPC] argsToValueMap args:', JSON.stringify(args, (_k, v) => (typeof v === 'bigint' ? v.toString() : v)));
   const valueMap: { [key: string]: Model.Value } = {};
 
   const toModelValue = (value: any): Model.Value | undefined => {
