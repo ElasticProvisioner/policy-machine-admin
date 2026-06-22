@@ -3,7 +3,6 @@ import { Login } from "@/pages/login/Login";
 import { ProtectedRoute } from "@/ProtectedRoute";
 import {DashboardPage} from "@/pages/dashboard/DashboardPage";
 import {PMLEditorPage} from "@/pages/pml/PMLEditorPage";
-import {Dashboard2Page} from "@/pages/dashboard2/Dashboard2Page";
 
 const router = createBrowserRouter([
   {
@@ -25,10 +24,6 @@ const router = createBrowserRouter([
       {
         path: 'dashboard',
         element: <DashboardPage />,
-      },
-      {
-        path: 'dashboard2',
-        element: <Dashboard2Page />,
       },
     ],
   },

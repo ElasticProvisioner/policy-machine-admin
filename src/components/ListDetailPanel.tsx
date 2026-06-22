@@ -15,8 +15,8 @@ import {
 import { IconPlus, IconRefresh, IconSearch } from "@tabler/icons-react";
 
 // When provided with `sectionHeader: true`, ListDetailPanel renders its header
-// as an uppercase section bar (matching the Dashboard2 main-panel "Policy
-// Classes" header) with the action buttons placed below it. Dashboard2 wraps
+// as an uppercase section bar (matching the dashboard main-panel "Policy
+// Classes" header) with the action buttons placed below it. The dashboard wraps
 // its left panels in this provider; everywhere else keeps the default header.
 export const ListDetailChromeContext = React.createContext<{ sectionHeader: boolean }>({
     sectionHeader: false,

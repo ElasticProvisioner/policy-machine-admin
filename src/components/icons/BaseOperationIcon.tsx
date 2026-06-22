@@ -1,5 +1,5 @@
-import React from 'react';
-import { CogMask } from './CogMask';
+import React, { useId } from 'react';
+import { CogMaskDefs, CogOverlay } from './CogMask';
 
 export interface OperationIconProps {
   size?: number;
@@ -21,22 +21,30 @@ export const BaseOperationIcon: React.FC<BaseOperationIconProps> = ({
   className = '',
   children,
 }) => {
+  // Unique mask id per instance so multiple icons on a page don't collide.
+  const maskId = `cog-mask-${useId().replace(/[^a-zA-Z0-9-]/g, '')}`;
+
   return (
-    <CogMask size={size}>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="100%"
-        height="100%"
-        viewBox="0 0 24 24"
-        fill="none"
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      style={{ color, overflow: 'visible' }}
+    >
+      <CogMaskDefs id={maskId} />
+      <g
+        mask={`url(#${maskId})`}
         stroke={color}
         strokeWidth={stroke}
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={className}
       >
         {children}
-      </svg>
-    </CogMask>
+      </g>
+      <CogOverlay color={color} />
+    </svg>
   );
 };
