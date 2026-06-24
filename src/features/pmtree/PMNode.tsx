@@ -200,12 +200,12 @@ export function PMNode({ node, style, tree, clickHandlers, direction, treeDataAt
 						lineHeight: '16px',
 						padding: '0 4px',
 						borderRadius: 3,
-						backgroundColor: 'var(--mantine-color-green-0)',
 						color: 'var(--mantine-color-green-9)',
 						border: '1px solid var(--mantine-color-green-9)',
 						fontWeight: 600,
 						whiteSpace: 'nowrap',
 						flexShrink: 0,
+						marginLeft: '10px'
 					}}>
 						{pc}
 					</span>

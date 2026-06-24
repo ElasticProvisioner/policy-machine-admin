@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-	IconArrowRight,
 	IconEdit,
 	IconPlus,
 	IconSquareRoundedMinus,
-	IconTrash,
+	IconSwitchHorizontal,
 	IconX
 } from "@tabler/icons-react";
 import { NodeApi } from "react-arborist";
@@ -12,12 +11,11 @@ import {ActionIcon, Alert, Box, Button, Divider, Group, Popover, Stack, Text, To
 import { notifications } from "@mantine/notifications";
 import { PMTree } from "@/features/pmtree";
 import { fetchAssociationChildren } from "@/features/pmtree/tree-data-fetcher";
-import { AssociationDirection, IncomingAssociationIcon, OutgoingAssociationIcon, NodeIcon, sortTreeNodes, transformNodesToTreeNodes, TreeNode } from "@/features/pmtree/tree-utils";
+import { AssociationDirection, NodeIcon, sortTreeNodes, transformNodesToTreeNodes, TreeNode } from "@/features/pmtree/tree-utils";
 import { Node, NODE_TYPES, NodePrivilegeInfo, NodeType } from "@/shared/api/pdp.types";
 import * as QueryService from "@/shared/api/pdp_query.api";
 import * as AdjudicationService from "@/shared/api/pdp_adjudication.api";
 import { PANEL_RADIUS } from "@/theme";
-import { AssociationModal } from "./AssociationModal";
 import { AccessRightsTree } from "@/components/access-rights";
 
 // Helper function to transform NodePrivilegeInfo to TreeNode
@@ -30,11 +28,13 @@ function transformNodePrivilegeInfoToTreeNodes(privileges: NodePrivilegeInfo[]):
 }
 
 type InlineAssocState = {
+	mode: 'create' | 'edit';
 	direction: AssociationDirection;
 	otherNode: TreeNode | null;
 	selectedRights: string[];
 	pickingNode: TreeNode | null;
 	isPicking: boolean;
+	editingNode: TreeNode | null;
 } | null;
 
 
@@ -62,12 +62,7 @@ export function InfoPanel(props: InfoPanelProps) {
 	const [isAssignmentPickerOpen, setIsAssignmentPickerOpen] = useState(false);
 	const [pickingAssignmentNode, setPickingAssignmentNode] = useState<TreeNode | null>(null);
 
-	// Association modal state (edit only)
-	const [isAssociationModalOpen, setIsAssociationModalOpen] = useState(false);
-	const [associationDirection, setAssociationDirection] = useState<AssociationDirection | null>(null);
-	const [editingAssociationNode, setEditingAssociationNode] = useState<TreeNode | null>(null);
-
-	// Inline association creation state
+	// Inline association creation/edit state
 	const [inlineAssoc, setInlineAssoc] = useState<InlineAssocState>(null);
 
 	// Descendants tree selection state
@@ -88,7 +83,7 @@ export function InfoPanel(props: InfoPanelProps) {
 	useEffect(() => {
 		if (!props.startAssociation) return;
 		const { direction, otherNode } = props.startAssociation;
-		setInlineAssoc({ direction, otherNode, selectedRights: [], pickingNode: null, isPicking: false });
+		setInlineAssoc({ mode: 'create', direction, otherNode, selectedRights: [], pickingNode: null, isPicking: false, editingNode: null });
 		setSelectedAssociationDirection(direction);
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [props.startAssociation?.nonce]);
@@ -205,8 +200,21 @@ export function InfoPanel(props: InfoPanelProps) {
 
 	// Inline association handlers
 	const handleStartAssociation = useCallback((direction: AssociationDirection) => {
-		setInlineAssoc({ direction, otherNode: null, selectedRights: [], pickingNode: null, isPicking: false });
+		setInlineAssoc({ mode: 'create', direction, otherNode: null, selectedRights: [], pickingNode: null, isPicking: false, editingNode: null });
 		setSelectedAssociationDirection(direction);
+	}, []);
+
+	const handleSwitchAssociationDirection = useCallback(() => {
+		setInlineAssoc(prev => {
+			if (!prev) return null;
+			const direction = prev.direction === AssociationDirection.Outgoing
+				? AssociationDirection.Incoming
+				: AssociationDirection.Outgoing;
+			return { ...prev, direction, otherNode: null, pickingNode: null, isPicking: false };
+		});
+		setSelectedAssociationDirection(prev =>
+			prev === AssociationDirection.Outgoing ? AssociationDirection.Incoming : AssociationDirection.Outgoing
+		);
 	}, []);
 
 	const handleOpenPicker = useCallback(() => {
@@ -250,10 +258,42 @@ export function InfoPanel(props: InfoPanelProps) {
 		if (!inlineAssoc?.otherNode?.pmId || !props.rootNode.pmId) return;
 		const otherNodePmId = inlineAssoc.otherNode.pmId;
 		const rootPmId = props.rootNode.pmId;
-		const { direction, otherNode, selectedRights } = inlineAssoc;
+		const { mode, direction, otherNode, selectedRights } = inlineAssoc;
 		const isOutgoing = direction === AssociationDirection.Outgoing;
 		const sourcePmId = isOutgoing ? rootPmId : otherNodePmId;
 		const targetPmId = isOutgoing ? otherNodePmId : rootPmId;
+
+		if (mode === 'edit') {
+			try {
+				// Update existing association: dissociate then reassociate with new rights
+				await AdjudicationService.dissociate(sourcePmId, targetPmId);
+				await AdjudicationService.associate(sourcePmId, targetPmId, selectedRights);
+
+				setAssociationRootNodes(prev => prev.map(node => {
+					if (node.id === inlineAssoc.editingNode?.id) {
+						return {
+							...node,
+							associationDetails: {
+								...node.associationDetails!,
+								accessRightSet: selectedRights,
+							},
+						};
+					}
+					return node;
+				}));
+
+				notifications.show({
+					color: 'green',
+					title: 'Association Updated',
+					message: 'Association access rights have been updated successfully',
+				});
+				setInlineAssoc(null);
+			} catch (error) {
+				notifications.show({ color: 'red', title: 'Update Error', message: (error as Error).message });
+			}
+			return;
+		}
+
 		try {
 			await AdjudicationService.associate(sourcePmId, targetPmId, selectedRights);
 			notifications.show({ color: 'green', title: 'Association Created', message: `Created association with ${otherNode.name}` });
@@ -291,62 +331,6 @@ export function InfoPanel(props: InfoPanelProps) {
 		}
 	}, [inlineAssoc, props.rootNode]);
 
-	// Association modal handlers (edit only)
-	const handleEditAssociation = useCallback((associationNode: TreeNode) => {
-		setAssociationDirection(associationNode.associationDetails?.type || AssociationDirection.Incoming);
-		setEditingAssociationNode(associationNode);
-		setIsAssociationModalOpen(true);
-	}, []);
-
-	const handleCloseAssociationModal = useCallback(() => {
-		setIsAssociationModalOpen(false);
-		setAssociationDirection(null);
-		setEditingAssociationNode(null);
-	}, []);
-
-	const handleSubmitAssociation = useCallback(async (selectedNode: TreeNode, accessRights: string[]) => {
-		if (!props.rootNode.pmId || !selectedNode.pmId || !associationDirection) {
-			return;
-		}
-
-		try {
-			const isOutgoing = associationDirection === AssociationDirection.Outgoing;
-			const sourcePmId = isOutgoing ? props.rootNode.pmId : selectedNode.pmId;
-			const targetPmId = isOutgoing ? selectedNode.pmId : props.rootNode.pmId;
-
-			// Update existing association: dissociate then reassociate
-			await AdjudicationService.dissociate(sourcePmId, targetPmId);
-			await AdjudicationService.associate(sourcePmId, targetPmId, accessRights);
-
-			// Update the association node in state
-			setAssociationRootNodes(prev => prev.map(node => {
-				if (node.pmId === selectedNode.pmId && node.associationDetails?.type === associationDirection) {
-					return {
-						...node,
-						associationDetails: {
-							...node.associationDetails,
-							accessRightSet: accessRights,
-						},
-					};
-				}
-				return node;
-			}));
-
-			notifications.show({
-				color: 'green',
-				title: 'Association Updated',
-				message: 'Association access rights have been updated successfully',
-			});
-
-		} catch (error) {
-			notifications.show({
-				color: 'red',
-				title: 'Update Error',
-				message: (error as Error).message,
-			});
-		}
-	}, [props.rootNode, associationDirection]);
-
 	const handleDeleteAssociation = useCallback(async (associationNode: TreeNode) => {
 		if (!props.rootNode?.pmId || !associationNode.pmId) {
 			return;
@@ -377,7 +361,11 @@ export function InfoPanel(props: InfoPanelProps) {
 		}
 	}, [props.rootNode]);
 
-
+	const handleDeleteInlineAssoc = useCallback(async () => {
+		if (!inlineAssoc?.editingNode) return;
+		await handleDeleteAssociation(inlineAssoc.editingNode);
+		setInlineAssoc(null);
+	}, [inlineAssoc, handleDeleteAssociation]);
 
 	// Fetch association nodes for the root node
 	useEffect(() => {
@@ -438,14 +426,24 @@ export function InfoPanel(props: InfoPanelProps) {
 		if (node && node.length > 0) {
 			const selectedNode = node[0].data as TreeNode;
 
-			if (!selectedNode.isAssociation) {
+			if (!selectedNode.isAssociation || !selectedNode.associationDetails) {
 				return;
 			}
 
-			// Open the modal in edit mode
-			handleEditAssociation(selectedNode);
+			// Open the association inline, in the same form used to create associations
+			const { type, accessRightSet } = selectedNode.associationDetails;
+			setInlineAssoc({
+				mode: 'edit',
+				direction: type,
+				otherNode: selectedNode,
+				selectedRights: accessRightSet || [],
+				pickingNode: null,
+				isPicking: false,
+				editingNode: selectedNode,
+			});
+			setSelectedAssociationDirection(type);
 		}
-	}, [handleEditAssociation]);
+	}, []);
 
 	// Memoize tree props to prevent unnecessary re-renders
 	const associationTreeProps = useMemo(() => ({
@@ -499,9 +497,9 @@ export function InfoPanel(props: InfoPanelProps) {
 								>
 									<Popover.Target>
 										<Box style={{ display: 'inline-block' }}>
-											<Tooltip label="Assign To">
-												<Button size="xs" leftSection={<IconPlus size={20} />} rightSection={<IconArrowRight size={20} />} onClick={handleStartAssignment} />
-											</Tooltip>
+											<Button size="xs" onClick={handleStartAssignment}>
+												Assign To
+											</Button>
 										</Box>
 									</Popover.Target>
 									<Popover.Dropdown style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '2px solid var(--mantine-primary-color-filled)', borderRadius: '6px' }}>
@@ -562,10 +560,10 @@ export function InfoPanel(props: InfoPanelProps) {
 										</Group>
 									</Popover.Dropdown>
 								</Popover>
-								<Tooltip label="Deassign">
-									<Button size="xs" color="red" leftSection={<IconTrash size={20} />} rightSection={<IconArrowRight size={20} />} onClick={handleDeassignSelected}
-										style={{ visibility: isSelectedNodeRoot && selectedDescendantNode ? 'visible' : 'hidden' }} />
-								</Tooltip>
+								<Button size="xs" color="red" onClick={handleDeassignSelected}
+									style={{ visibility: isSelectedNodeRoot && selectedDescendantNode ? 'visible' : 'hidden' }}>
+									Deassign From
+								</Button>
 							</Group>
 							<Box style={{ flex: 1, backgroundColor: theme.other.intellijContentBg, border: '1px solid var(--mantine-color-gray-3)', borderRadius: PANEL_RADIUS, minHeight: 0, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 								<PMTree
@@ -603,15 +601,16 @@ export function InfoPanel(props: InfoPanelProps) {
 						<Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', minWidth: 0, paddingLeft: stacked ? 0 : 8 }}>
 							<Group gap="xs" align="center" mb={8}>
 								<Text size="md" fw={600}>Associations</Text>
-								{!inlineAssoc && canHaveIncoming && (
-									<Tooltip label="Create INCOMING association">
-										<Button size="xs" color={theme.colors.green[9]} leftSection={<IconPlus size={20} />} rightSection={<IncomingAssociationIcon size="20px" />} onClick={() => handleStartAssociation(AssociationDirection.Incoming)} />
-									</Tooltip>
-								)}
-								{!inlineAssoc && canHaveOutgoing && (
-									<Tooltip label="Create OUTGOING association">
-										<Button size="xs" color={theme.colors.green[9]} leftSection={<IconPlus size={20} />} rightSection={<OutgoingAssociationIcon size="20px" />} onClick={() => handleStartAssociation(AssociationDirection.Outgoing)} />
-									</Tooltip>
+								{!inlineAssoc && (
+									<Button
+										size="xs"
+										color={theme.colors.green[9]}
+										onClick={() => handleStartAssociation(
+											nodeType === NodeType.UA ? AssociationDirection.Outgoing : AssociationDirection.Incoming
+										)}
+									>
+										Associate
+									</Button>
 								)}
 							</Group>
 
@@ -629,13 +628,20 @@ export function InfoPanel(props: InfoPanelProps) {
 								}}>
 									<Box style={{ padding: '8px 12px', flexShrink: 0 }}>
 										{/* Source */}
-										<Box mb={8}>
+										<Box mb={4}>
 											<Text size="xs" c="dimmed" mb={4}>Source</Text>
+											<Box style={{ minHeight: 30, display: 'flex', alignItems: 'center' }}>
 											{inlineAssoc.direction === AssociationDirection.Outgoing ? (
 												/* Root node is the source (fixed) */
 												<Group gap="xs">
 													<NodeIcon type={props.rootNode.type} size={24} />
 													<Text size="sm" fw={500}>{props.rootNode.name}</Text>
+												</Group>
+											) : inlineAssoc.mode === 'edit' ? (
+												/* Editing: source cannot be changed */
+												<Group gap="xs">
+													<NodeIcon type={inlineAssoc.otherNode!.type} size={24} />
+													<Text size="sm" fw={500}>{inlineAssoc.otherNode!.name}</Text>
 												</Group>
 											) : (
 												/* Other node is the source (to be picked) */
@@ -700,16 +706,34 @@ export function InfoPanel(props: InfoPanelProps) {
 													</Popover.Dropdown>
 												</Popover>
 											)}
+											</Box>
 										</Box>
+
+										{nodeType === NodeType.UA && inlineAssoc.mode === 'create' && (
+											<Group justify="flex-start" mb={4}>
+												<Tooltip label={inlineAssoc.direction === AssociationDirection.Outgoing ? "Switch to target" : "Switch to source"}>
+													<ActionIcon size="sm" variant="subtle" onClick={handleSwitchAssociationDirection}>
+														<IconSwitchHorizontal size={16} style={{ transform: 'rotate(90deg)' }} />
+													</ActionIcon>
+												</Tooltip>
+											</Group>
+										)}
 
 										{/* Target */}
 										<Box mb={8}>
 											<Text size="xs" c="dimmed" mb={4}>Target</Text>
+											<Box style={{ minHeight: 30, display: 'flex', alignItems: 'center' }}>
 											{inlineAssoc.direction === AssociationDirection.Incoming ? (
 												/* Root node is the target (fixed) */
 												<Group gap="xs">
 													<NodeIcon type={props.rootNode.type} size={24} />
 													<Text size="sm" fw={500}>{props.rootNode.name}</Text>
+												</Group>
+											) : inlineAssoc.mode === 'edit' ? (
+												/* Editing: target cannot be changed */
+												<Group gap="xs">
+													<NodeIcon type={inlineAssoc.otherNode!.type} size={24} />
+													<Text size="sm" fw={500}>{inlineAssoc.otherNode!.name}</Text>
 												</Group>
 											) : (
 												/* Other node is the target (to be picked) */
@@ -774,6 +798,7 @@ export function InfoPanel(props: InfoPanelProps) {
 													</Popover.Dropdown>
 												</Popover>
 											)}
+											</Box>
 										</Box>
 									</Box>
 
@@ -796,6 +821,11 @@ export function InfoPanel(props: InfoPanelProps) {
 									{/* Form action buttons */}
 									<Group justify="center" gap="xs" p={8} style={{ flexShrink: 0, borderTop: '1px solid var(--mantine-color-gray-2)' }}>
 										<Button size="xs" variant="outline" color="gray" onClick={handleCancelInlineAssoc}>Cancel</Button>
+										{inlineAssoc.mode === 'edit' && (
+											<Button size="xs" variant="filled" color="red" onClick={handleDeleteInlineAssoc}>
+												Delete
+											</Button>
+										)}
 										<Button
 											size="xs"
 											disabled={!inlineAssoc.otherNode || inlineAssoc.selectedRights.length === 0}
@@ -836,21 +866,6 @@ export function InfoPanel(props: InfoPanelProps) {
 					);
             })()}
 			</Box>
-
-	{/* Association Modal (Edit only) */}
-			{isAssociationModalOpen && associationDirection && editingAssociationNode && (
-				<AssociationModal
-					opened={isAssociationModalOpen}
-					onClose={handleCloseAssociationModal}
-					direction={associationDirection}
-					onSubmit={handleSubmitAssociation}
-					onDelete={handleDeleteAssociation}
-					resourceOperations={resourceOperations}
-					mode="edit"
-					associationNode={editingAssociationNode}
-					rootNode={props.rootNode}
-				/>
-			)}
 		</Stack>
 	)
 }

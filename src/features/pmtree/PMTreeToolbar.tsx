@@ -5,6 +5,7 @@ import { IncomingAssociationIcon, NodeIcon, OutgoingAssociationIcon } from '@/fe
 import { NodeType } from '@/shared/api/pdp.types';
 import { TreeFilterToolbar } from './TreeFilterToolbar';
 import { TreeDirection, TreeFilterConfig } from './hooks/usePMTreeOperations';
+import { PANEL_RADIUS } from '@/theme';
 
 export interface PMTreeToolbarProps {
     // Visibility controls (all default to true, except createPolicyClass which defaults to false)
@@ -55,7 +56,7 @@ export function PMTreeToolbar({
     const [containerWidth, setContainerWidth] = useState(9999);
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current) {return;}
         const ro = new ResizeObserver((entries) => setContainerWidth(entries[0].contentRect.width));
         ro.observe(containerRef.current);
         return () => ro.disconnect();
@@ -70,7 +71,7 @@ export function PMTreeToolbar({
                 const el = sectionRefs.current[i];
                 if (el) {
                     const w = el.offsetWidth;
-                    if (w > 0) sectionWidths.current[i] = w;
+                    if (w > 0) {sectionWidths.current[i] = w;}
                 }
             }
         });
@@ -79,11 +80,11 @@ export function PMTreeToolbar({
     // Stable ordered list of enabled section keys
     const sectionKeys = useMemo(() => {
         const keys: string[] = [];
-        if (showReset) keys.push('reset');
-        if (showCreatePolicyClass && onCreatePolicyClass) keys.push('createPC');
-        if (leftSection) keys.push('leftSection');
-        if (showTreeFilters) keys.push('treeFilters');
-        if (showDirection) keys.push('direction');
+        if (showReset) {keys.push('reset');}
+        if (showCreatePolicyClass && onCreatePolicyClass) {keys.push('createPC');}
+        if (leftSection) {keys.push('leftSection');}
+        if (showTreeFilters) {keys.push('treeFilters');}
+        if (showDirection) {keys.push('direction');}
         return keys;
     }, [showReset, showCreatePolicyClass, onCreatePolicyClass, leftSection, showTreeFilters, showDirection]);
 
@@ -273,7 +274,7 @@ export function PMTreeToolbar({
                             alignItems: 'center',
                         }}
                     >
-                        <Tooltip label="Reset" position="bottom" openDelay={300}>
+                        <Tooltip label="Reset" position="top" openDelay={300}>
                             <ActionIcon variant="subtle" color="gray" radius="xl" size="lg" onClick={onReset}>
                                 <IconRefresh size={20} />
                             </ActionIcon>
@@ -290,7 +291,7 @@ export function PMTreeToolbar({
                             alignItems: 'center',
                         }}
                     >
-                        <Tooltip label="Create policy class" position="bottom" openDelay={300}>
+                        <Tooltip label="Create policy class" position="top" openDelay={300}>
                             <ActionIcon variant="subtle" color="gray" radius="xl" size="lg" onClick={onCreatePolicyClass}>
                                 <NodeIcon type={NodeType.PC} size={22} />
                             </ActionIcon>
@@ -339,7 +340,7 @@ export function PMTreeToolbar({
                             style={{
                                 height: 32,
                                 paddingInline: 12,
-                                borderRadius: 999,
+                                borderRadius: PANEL_RADIUS,
                                 backgroundColor: 'var(--mantine-color-gray-1)',
                                 color: 'var(--mantine-color-gray-7)',
                             }}
@@ -358,7 +359,7 @@ export function PMTreeToolbar({
                 {overflowSections.length > 0 && (
                     <Menu position="bottom-end" withinPortal>
                         <Menu.Target>
-                            <Tooltip label="More options" position="bottom">
+                            <Tooltip label="More options" position="top">
                                 <ActionIcon variant="transparent" size="lg">
                                     <IconDotsVertical size={18} />
                                 </ActionIcon>

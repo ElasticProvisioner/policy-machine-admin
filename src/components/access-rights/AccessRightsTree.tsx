@@ -7,7 +7,6 @@ import {
 	consolidateSelections,
 	findSelectedAncestor,
 	getAllAccessRights,
-	getAllExpandableRights,
 	isAncestorSelected,
 } from './AccessRightsSelection';
 
@@ -43,6 +42,11 @@ function findPathToNode(targetAr: string, node: AccessRight): string[] | null {
 	return null;
 }
 
+// Only the root is expanded by default — resource:* and admin:* start collapsed
+function getDefaultExpandedRights(node: AccessRight): string[] {
+	return node.children && node.children.length > 0 ? [node.ar] : [];
+}
+
 interface AccessRightsTreeProps {
 	availableRights: string[];
 	selectedRights: string[];
@@ -64,7 +68,7 @@ export function AccessRightsTree({
 	);
 
 	const [expanded, setExpanded] = useState<Set<string>>(() => {
-		return new Set(getAllExpandableRights(accessRightTree));
+		return new Set(getDefaultExpandedRights(accessRightTree));
 	});
 
 	const lastConsolidatedRef = useRef<string | null>(null);
@@ -116,9 +120,16 @@ export function AccessRightsTree({
 				newRights = selectedRights;
 			}
 		} else {
-			const childRights = node.children ? getAllAccessRights(node).slice(1) : [];
-			const cleanedRights = selectedRights.filter(r => !childRights.includes(r));
-			newRights = [...cleanedRights, node.ar];
+			const descendantRights = node.children ? getAllAccessRights(node).slice(1) : [];
+			const hasSelectedDescendant = descendantRights.some(ar => selectedRights.includes(ar));
+
+			if (hasSelectedDescendant) {
+				// Indeterminate: some but not all descendants are selected — clear them
+				// rather than filling in the rest, since the checkbox isn't checked yet.
+				newRights = selectedRights.filter(r => !descendantRights.includes(r));
+			} else {
+				newRights = [...selectedRights, node.ar];
+			}
 		}
 
 		const consolidated = consolidateSelections(accessRightTree, newRights);

@@ -53,7 +53,7 @@ export interface NodeContextMenu {
 const getValidChildNodeTypes = (parentType: NodeType): NodeType[] => {
     switch (parentType) {
         case NodeType.PC:
-            return [NodeType.UA, NodeType.OA];
+            return [NodeType.UA, NodeType.OA, NodeType.O];
         case NodeType.UA:
             return [NodeType.UA, NodeType.U];
         case NodeType.OA:

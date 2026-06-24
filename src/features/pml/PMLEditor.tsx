@@ -322,6 +322,7 @@ export function PMLEditor({ placeholder, initialValue = '', onChange, onExecute,
               minHeight: 0,
               border: `1px solid var(--mantine-color-gray-${themeMode === 'dark' ? '7' : '3'})`,
               borderRadius: '8px',
+              overflow: 'hidden',
               position: 'relative'
             }}
         >
@@ -370,7 +371,7 @@ export function PMLEditor({ placeholder, initialValue = '', onChange, onExecute,
         )}
 
         {!hideButtons && (
-            <Group justify="flex-end">
+            <Group justify="center">
               <Button
                   variant="outline"
                   leftSection={<IconFileUpload size={16} />}

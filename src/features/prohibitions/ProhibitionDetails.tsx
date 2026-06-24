@@ -9,12 +9,16 @@ import {
   Text,
   Alert,
   ActionIcon,
-  Divider, useMantineTheme
+  Divider,
+  Popover,
+  useMantineTheme
 } from "@mantine/core";
-import { IconSquareRoundedMinus, IconPlus } from "@tabler/icons-react";
+import { NodeApi } from "react-arborist";
+import { IconSquareRoundedMinus, IconEdit } from "@tabler/icons-react";
 import { AccessRightsSelection } from "@/components/access-rights";
+import { PMTree } from "@/features/pmtree";
 import { TreeNode, NodeIcon } from "@/features/pmtree/tree-utils";
-import { NodeType, Prohibition } from "@/shared/api/pdp.types";
+import { NODE_TYPES, NodeType, Prohibition } from "@/shared/api/pdp.types";
 import * as QueryService from "@/shared/api/pdp_query.api";
 import * as AdjudicationService from "@/shared/api/pdp_adjudication.api";
 import { notifications } from "@mantine/notifications";
@@ -59,10 +63,16 @@ export function ProhibitionDetails({
   // Check if this is a process prohibition (read-only, delete only)
   const isProcessProhibition = Boolean(initialProhibition?.subject?.process);
 
-  // Selection modes
-  const [isSelectingSubject, setIsSelectingSubject] = useState(false);
-  const [isSelectingInclusion, setIsSelectingInclusion] = useState(false);
-  const [isSelectingExclusion, setIsSelectingExclusion] = useState(false);
+  // Node picker popovers (mirrors the "Set Source"/"Set Target" and "Assign To" pickers
+  // used when creating an association)
+  const [isSubjectPickerOpen, setIsSubjectPickerOpen] = useState(false);
+  const [pickingSubjectNode, setPickingSubjectNode] = useState<TreeNode | null>(null);
+
+  const [isInclusionPickerOpen, setIsInclusionPickerOpen] = useState(false);
+  const [pickingInclusionNode, setPickingInclusionNode] = useState<TreeNode | null>(null);
+
+  const [isExclusionPickerOpen, setIsExclusionPickerOpen] = useState(false);
+  const [pickingExclusionNode, setPickingExclusionNode] = useState<TreeNode | null>(null);
 
   // Resource operations
   const [resourceOperations, setResourceOperations] = useState<string[]>([]);
@@ -70,7 +80,8 @@ export function ProhibitionDetails({
   // Loading states
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize subject from initial prohibition or selected nodes
+  // Initialize subject from initial prohibition, or prefill from a node the panel was
+  // opened with (e.g. "Create Prohibition" from a node's context menu)
   useEffect(() => {
     if (initialProhibition?.subject?.node) {
       setSubject({
@@ -79,49 +90,88 @@ export function ProhibitionDetails({
         type: initialProhibition.subject.node.type as NodeType,
         pmId: initialProhibition.subject.node.id
       });
-    }
-  }, [initialProhibition]);
-
-  // Handle subject selection from tree
-  useEffect(() => {
-    if (isSelectingSubject && selectedNodes && selectedNodes.length > 0) {
-      // Only allow U and UA nodes for subject
+    } else if (selectedNodes && selectedNodes.length > 0) {
       const validNode = selectedNodes.find(node =>
           node.type === NodeType.U || node.type === NodeType.UA
       );
-
       if (validNode) {
         setSubject(validNode);
-        setIsSelectingSubject(false);
       }
     }
-  }, [selectedNodes, isSelectingSubject]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Handle inclusion set selection from tree
-  useEffect(() => {
-    if (isSelectingInclusion && selectedNodes && selectedNodes.length > 0) {
-      const newNodes = selectedNodes.filter(node =>
-          !inclusionSet.some(n => n.pmId === node.pmId)
-      );
+  const handleOpenSubjectPicker = useCallback(() => {
+    setPickingSubjectNode(null);
+    setIsSubjectPickerOpen(true);
+  }, []);
 
-      if (newNodes.length > 0) {
-        setInclusionSet(prev => [...prev, ...newNodes]);
-      }
+  const handleCloseSubjectPicker = useCallback(() => {
+    setIsSubjectPickerOpen(false);
+    setPickingSubjectNode(null);
+  }, []);
+
+  const handleSubjectPickerSelect = useCallback((nodes: NodeApi<TreeNode>[]) => {
+    const node = nodes?.[0]?.data ?? null;
+    setPickingSubjectNode(node);
+  }, []);
+
+  const handleConfirmSubjectPicker = useCallback(() => {
+    if (!pickingSubjectNode) {return;}
+    if (pickingSubjectNode.type !== NodeType.U && pickingSubjectNode.type !== NodeType.UA) {
+      notifications.show({ color: 'red', title: 'Invalid Subject', message: 'Subject must be a User (U) or User Attribute (UA).' });
+      return;
     }
-  }, [selectedNodes, isSelectingInclusion, inclusionSet]);
+    setSubject(pickingSubjectNode);
+    setIsSubjectPickerOpen(false);
+    setPickingSubjectNode(null);
+  }, [pickingSubjectNode]);
 
-  // Handle exclusion set selection from tree
-  useEffect(() => {
-    if (isSelectingExclusion && selectedNodes && selectedNodes.length > 0) {
-      const newNodes = selectedNodes.filter(node =>
-          !exclusionSet.some(n => n.pmId === node.pmId)
-      );
+  const handleOpenInclusionPicker = useCallback(() => {
+    setPickingInclusionNode(null);
+    setIsInclusionPickerOpen(true);
+  }, []);
 
-      if (newNodes.length > 0) {
-        setExclusionSet(prev => [...prev, ...newNodes]);
-      }
-    }
-  }, [selectedNodes, isSelectingExclusion, exclusionSet]);
+  const handleCloseInclusionPicker = useCallback(() => {
+    setIsInclusionPickerOpen(false);
+    setPickingInclusionNode(null);
+  }, []);
+
+  const handleInclusionPickerSelect = useCallback((nodes: NodeApi<TreeNode>[]) => {
+    const node = nodes?.[0]?.data ?? null;
+    setPickingInclusionNode(node);
+  }, []);
+
+  const handleAddInclusionPick = useCallback(() => {
+    if (!pickingInclusionNode) {return;}
+    setInclusionSet(prev =>
+        prev.some(n => n.pmId === pickingInclusionNode.pmId) ? prev : [...prev, pickingInclusionNode]
+    );
+    setPickingInclusionNode(null);
+  }, [pickingInclusionNode]);
+
+  const handleOpenExclusionPicker = useCallback(() => {
+    setPickingExclusionNode(null);
+    setIsExclusionPickerOpen(true);
+  }, []);
+
+  const handleCloseExclusionPicker = useCallback(() => {
+    setIsExclusionPickerOpen(false);
+    setPickingExclusionNode(null);
+  }, []);
+
+  const handleExclusionPickerSelect = useCallback((nodes: NodeApi<TreeNode>[]) => {
+    const node = nodes?.[0]?.data ?? null;
+    setPickingExclusionNode(node);
+  }, []);
+
+  const handleAddExclusionPick = useCallback(() => {
+    if (!pickingExclusionNode) {return;}
+    setExclusionSet(prev =>
+        prev.some(n => n.pmId === pickingExclusionNode.pmId) ? prev : [...prev, pickingExclusionNode]
+    );
+    setPickingExclusionNode(null);
+  }, [pickingExclusionNode]);
 
   // Fetch resource operations
   useEffect(() => {
@@ -220,10 +270,6 @@ export function ProhibitionDetails({
           title: 'Prohibition Created',
           message: 'Prohibition has been created successfully',
         });
-        // Reset selection modes
-        setIsSelectingSubject(false);
-        setIsSelectingInclusion(false);
-        setIsSelectingExclusion(false);
         onSuccess(prohibitionData, 'create');
       }
     } catch (error) {
@@ -249,10 +295,6 @@ export function ProhibitionDetails({
         title: 'Prohibition Deleted',
         message: 'Prohibition has been deleted successfully',
       });
-      // Reset selection modes
-      setIsSelectingSubject(false);
-      setIsSelectingInclusion(false);
-      setIsSelectingExclusion(false);
       onSuccess(undefined, 'delete');
     } catch (error) {
       notifications.show({
@@ -325,17 +367,10 @@ export function ProhibitionDetails({
               {/* Node Prohibition - normal subject selection */}
               {!isProcessProhibition && (
                   <>
-                    {!subject && !isSelectingSubject && !isEditing && (
+                    {!subject && !isEditing && (
                         <Alert variant="light" color="blue" mb="sm">
                           <Text size="sm">
-                            Select a U or UA node from the tree on the left, or click "Select Subject" button
-                          </Text>
-                        </Alert>
-                    )}
-                    {isSelectingSubject && !isEditing && (
-                        <Alert variant="light" color="orange" mb="sm">
-                          <Text size="sm">
-                            Selecting subject... Click on a U or UA node in the tree to the left
+                            Click "Select Subject" to choose a U or UA node
                           </Text>
                         </Alert>
                     )}
@@ -361,14 +396,24 @@ export function ProhibitionDetails({
                             </Text>
                           </Group>
                           {!isEditing && (
-                              <ActionIcon
-                                  size="sm"
-                                  variant="subtle"
-                                  color="red"
-                                  onClick={handleRemoveSubject}
-                              >
-                                <IconSquareRoundedMinus size={16} />
-                              </ActionIcon>
+                              <Group gap={4}>
+                                <ActionIcon
+                                    size="sm"
+                                    variant="subtle"
+                                    onClick={handleOpenSubjectPicker}
+                                    title="Change"
+                                >
+                                  <IconEdit size={16} />
+                                </ActionIcon>
+                                <ActionIcon
+                                    size="sm"
+                                    variant="subtle"
+                                    color="red"
+                                    onClick={handleRemoveSubject}
+                                >
+                                  <IconSquareRoundedMinus size={16} />
+                                </ActionIcon>
+                              </Group>
                           )}
                         </Group>
                     )}
@@ -378,13 +423,54 @@ export function ProhibitionDetails({
 
             {!subject && !isEditing && !isProcessProhibition && (
                 <Group justify="flex-start" mt="xs">
-                  <Button
-                      variant="light"
-                      size="xs"
-                      onClick={() => setIsSelectingSubject(!isSelectingSubject)}
+                  <Popover
+                      opened={isSubjectPickerOpen}
+                      onClose={handleCloseSubjectPicker}
+                      position="bottom"
+                      width={520}
+                      withArrow
+                      shadow="md"
                   >
-                    {isSelectingSubject ? 'Cancel Selection' : 'Select Subject'}
-                  </Button>
+                    <Popover.Target>
+                      <Button variant="light" size="xs" onClick={handleOpenSubjectPicker}>
+                        Select Subject
+                      </Button>
+                    </Popover.Target>
+                    <Popover.Dropdown style={{ padding: 0, height: 440, display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '2px solid var(--mantine-primary-color-filled)', borderRadius: '6px' }}>
+                      <Group px="sm" py={8} style={{ flexShrink: 0, backgroundColor: 'var(--mantine-primary-color-0)', borderBottom: '1px solid var(--mantine-primary-color-3)' }}>
+                        <Text size="xs" fw={700} c="var(--mantine-primary-color-filled)">Select Subject Node</Text>
+                      </Group>
+                      <Box style={{ flex: 1, minHeight: 0 }}>
+                        <PMTree
+                            direction="ascendants"
+                            showReset
+                            showTreeFilters={false}
+                            showDirection={false}
+                            showCreatePolicyClass={false}
+                            filterConfig={{
+                              nodeTypes: [NodeType.PC, NodeType.U, NodeType.UA],
+                              showIncomingAssociations: false,
+                              showOutgoingAssociations: false,
+                            }}
+                            clickHandlers={{ onSelect: handleSubjectPickerSelect }}
+                        />
+                      </Box>
+                      <Group gap="xs" p="xs" style={{ flexShrink: 0, borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', minHeight: 32 }}>
+                        {pickingSubjectNode ? (
+                            <>
+                              <NodeIcon type={pickingSubjectNode.type} size={18} />
+                              <Text size="xs" fw={500} style={{ flex: 1 }}>{pickingSubjectNode.name}</Text>
+                            </>
+                        ) : (
+                            <Text size="xs" c="dimmed">No node selected</Text>
+                        )}
+                      </Group>
+                      <Group justify="flex-end" gap="xs" p="xs" style={{ flexShrink: 0 }}>
+                        <Button size="xs" variant="subtle" color="gray" onClick={handleCloseSubjectPicker}>Cancel</Button>
+                        <Button size="xs" disabled={!pickingSubjectNode} onClick={handleConfirmSubjectPicker}>Set</Button>
+                      </Group>
+                    </Popover.Dropdown>
+                  </Popover>
                 </Group>
             )}
           </Box>
@@ -413,18 +499,11 @@ export function ProhibitionDetails({
           {/* Inclusion Set */}
           <Box>
             <Text size="sm" fw={500} mb="xs">Inclusion Set</Text>
-            {isSelectingInclusion && !isEditing && !isProcessProhibition && (
-                <Alert variant="light" color="orange" mb="sm">
-                  <Text size="sm">
-                    Selecting... Click on nodes in the left tree to add to inclusion set
-                  </Text>
-                </Alert>
-            )}
             <Box style={{
               maxHeight: "150px",
               overflow: "auto",
             }}>
-              {inclusionSet.length === 0 && !isSelectingInclusion && (
+              {inclusionSet.length === 0 && (
                   <Alert variant="light" color="gray" mb="sm">
                     <Text size="sm">No nodes in inclusion set</Text>
                   </Alert>
@@ -460,24 +539,54 @@ export function ProhibitionDetails({
 
             {!isEditing && !isProcessProhibition && (
                 <Group justify="flex-start" mt="xs">
-                  {!isSelectingInclusion ? (
-                      <Button
-                          variant="light"
-                          size="xs"
-                          leftSection={<IconPlus size={14} />}
-                          onClick={() => { setIsSelectingInclusion(true); setIsSelectingExclusion(false); }}
-                      >
+                  <Popover
+                      opened={isInclusionPickerOpen}
+                      onClose={handleCloseInclusionPicker}
+                      position="bottom"
+                      width={520}
+                      withArrow
+                      shadow="md"
+                  >
+                    <Popover.Target>
+                      <Button variant="light" size="xs" onClick={handleOpenInclusionPicker}>
                         Add to Inclusion
                       </Button>
-                  ) : (
-                      <Button
-                          variant="outline"
-                          size="xs"
-                          onClick={() => setIsSelectingInclusion(false)}
-                      >
-                        Stop Selecting
-                      </Button>
-                  )}
+                    </Popover.Target>
+                    <Popover.Dropdown style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '2px solid var(--mantine-primary-color-filled)', borderRadius: '6px' }}>
+                      <Group px="sm" py={8} style={{ flexShrink: 0, backgroundColor: 'var(--mantine-primary-color-0)', borderBottom: '1px solid var(--mantine-primary-color-3)' }}>
+                        <Text size="xs" fw={700} c="var(--mantine-primary-color-filled)">Select Node to Add</Text>
+                      </Group>
+                      <Box style={{ height: 300, minHeight: 0 }}>
+                        <PMTree
+                            direction="ascendants"
+                            showReset
+                            showTreeFilters={false}
+                            showDirection={false}
+                            showCreatePolicyClass={false}
+                            filterConfig={{
+                              nodeTypes: NODE_TYPES,
+                              showIncomingAssociations: false,
+                              showOutgoingAssociations: false,
+                            }}
+                            clickHandlers={{ onSelect: handleInclusionPickerSelect }}
+                        />
+                      </Box>
+                      <Group gap="xs" p="xs" style={{ flexShrink: 0, borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', minHeight: 32 }}>
+                        {pickingInclusionNode ? (
+                            <>
+                              <NodeIcon type={pickingInclusionNode.type} size={18} />
+                              <Text size="xs" fw={500} style={{ flex: 1 }}>{pickingInclusionNode.name}</Text>
+                            </>
+                        ) : (
+                            <Text size="xs" c="dimmed">No node selected</Text>
+                        )}
+                      </Group>
+                      <Group justify="flex-end" gap="xs" p="xs" style={{ flexShrink: 0 }}>
+                        <Button size="xs" variant="subtle" color="gray" onClick={handleCloseInclusionPicker}>Done</Button>
+                        <Button size="xs" disabled={!pickingInclusionNode} onClick={handleAddInclusionPick}>Add</Button>
+                      </Group>
+                    </Popover.Dropdown>
+                  </Popover>
                 </Group>
             )}
           </Box>
@@ -485,18 +594,11 @@ export function ProhibitionDetails({
           {/* Exclusion Set */}
           <Box>
             <Text size="sm" fw={500} mb="xs">Exclusion Set</Text>
-            {isSelectingExclusion && !isEditing && !isProcessProhibition && (
-                <Alert variant="light" color="orange" mb="sm">
-                  <Text size="sm">
-                    Selecting... Click on nodes in the left tree to add to exclusion set
-                  </Text>
-                </Alert>
-            )}
             <Box style={{
               maxHeight: "150px",
               overflow: "auto",
             }}>
-              {exclusionSet.length === 0 && !isSelectingExclusion && (
+              {exclusionSet.length === 0 && (
                   <Alert variant="light" color="gray" mb="sm">
                     <Text size="sm">No nodes in exclusion set</Text>
                   </Alert>
@@ -532,24 +634,54 @@ export function ProhibitionDetails({
 
             {!isEditing && !isProcessProhibition && (
                 <Group justify="flex-start" mt="xs">
-                  {!isSelectingExclusion ? (
-                      <Button
-                          variant="light"
-                          size="xs"
-                          leftSection={<IconPlus size={14} />}
-                          onClick={() => { setIsSelectingExclusion(true); setIsSelectingInclusion(false); }}
-                      >
+                  <Popover
+                      opened={isExclusionPickerOpen}
+                      onClose={handleCloseExclusionPicker}
+                      position="bottom"
+                      width={520}
+                      withArrow
+                      shadow="md"
+                  >
+                    <Popover.Target>
+                      <Button variant="light" size="xs" onClick={handleOpenExclusionPicker}>
                         Add to Exclusion
                       </Button>
-                  ) : (
-                      <Button
-                          variant="outline"
-                          size="xs"
-                          onClick={() => setIsSelectingExclusion(false)}
-                      >
-                        Stop Selecting
-                      </Button>
-                  )}
+                    </Popover.Target>
+                    <Popover.Dropdown style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '2px solid var(--mantine-primary-color-filled)', borderRadius: '6px' }}>
+                      <Group px="sm" py={8} style={{ flexShrink: 0, backgroundColor: 'var(--mantine-primary-color-0)', borderBottom: '1px solid var(--mantine-primary-color-3)' }}>
+                        <Text size="xs" fw={700} c="var(--mantine-primary-color-filled)">Select Node to Add</Text>
+                      </Group>
+                      <Box style={{ height: 300, minHeight: 0 }}>
+                        <PMTree
+                            direction="ascendants"
+                            showReset
+                            showTreeFilters={false}
+                            showDirection={false}
+                            showCreatePolicyClass={false}
+                            filterConfig={{
+                              nodeTypes: NODE_TYPES,
+                              showIncomingAssociations: false,
+                              showOutgoingAssociations: false,
+                            }}
+                            clickHandlers={{ onSelect: handleExclusionPickerSelect }}
+                        />
+                      </Box>
+                      <Group gap="xs" p="xs" style={{ flexShrink: 0, borderTop: '1px solid var(--mantine-color-gray-2)', borderBottom: '1px solid var(--mantine-color-gray-2)', minHeight: 32 }}>
+                        {pickingExclusionNode ? (
+                            <>
+                              <NodeIcon type={pickingExclusionNode.type} size={18} />
+                              <Text size="xs" fw={500} style={{ flex: 1 }}>{pickingExclusionNode.name}</Text>
+                            </>
+                        ) : (
+                            <Text size="xs" c="dimmed">No node selected</Text>
+                        )}
+                      </Group>
+                      <Group justify="flex-end" gap="xs" p="xs" style={{ flexShrink: 0 }}>
+                        <Button size="xs" variant="subtle" color="gray" onClick={handleCloseExclusionPicker}>Done</Button>
+                        <Button size="xs" disabled={!pickingExclusionNode} onClick={handleAddExclusionPick}>Add</Button>
+                      </Group>
+                    </Popover.Dropdown>
+                  </Popover>
                 </Group>
             )}
           </Box>

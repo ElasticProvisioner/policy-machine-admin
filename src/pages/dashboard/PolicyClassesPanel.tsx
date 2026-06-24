@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, IconRefresh } from '@tabler/icons-react';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { Accordion, Button, Group, Loader, Modal, Stack, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Accordion, Button, Group, Loader, Menu, Modal, Stack, Text, TextInput, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { PMTree, TreeFilterConfig, useNodeContextMenu } from '@/features/pmtree';
 import {
@@ -31,8 +31,21 @@ const TREE_FILTERS: TreeFilterConfig = {
 
 // ─── Accordion panel content: tree for a single PC, loaded on first expand ───────
 
-function PcTreePanel({ rootNodes, onRefresh }: { rootNodes?: TreeNode[]; onRefresh: () => void }) {
+const CREATABLE_CHILD_TYPES = [NodeType.UA, NodeType.OA, NodeType.O] as const;
+
+function PcTreePanel({
+  rootNodes,
+  onRefresh,
+  pcId,
+}: {
+  rootNodes?: TreeNode[];
+  onRefresh: () => void;
+  pcId: bigint;
+}) {
   const [prohibitionNode, setProhibitionNode] = useState<TreeNode | null>(null);
+  const [createType, setCreateType] = useState<NodeType | null>(null);
+  const [newChildName, setNewChildName] = useState('');
+  const [creatingChild, setCreatingChild] = useState(false);
   const setSelectedNode = useSetAtom(selectedNodeAtom);
   const setStartAssociation = useSetAtom(startAssociationAtom);
   const selectedUANode = useAtomValue(selectedUANodeAtom);
@@ -41,6 +54,69 @@ function PcTreePanel({ rootNodes, onRefresh }: { rootNodes?: TreeNode[]; onRefre
   // entry in the prefetched roots map, producing a fresh `rootNodes` array that
   // PMTree re-renders.
   const refresh = onRefresh;
+
+  const closeCreateChild = () => {
+    setCreateType(null);
+    setNewChildName('');
+  };
+
+  const handleCreateChild = async () => {
+    const name = newChildName.trim();
+    if (!createType || !name) {
+      return;
+    }
+
+    setCreatingChild(true);
+    try {
+      switch (createType) {
+        case NodeType.UA:
+          await AdjudicationService.createUserAttribute(name, [pcId]);
+          break;
+        case NodeType.OA:
+          await AdjudicationService.createObjectAttribute(name, [pcId]);
+          break;
+        case NodeType.O:
+          await AdjudicationService.createObject(name, [pcId]);
+          break;
+        default:
+          return;
+      }
+      notifications.show({
+        title: 'Node Created',
+        message: `Successfully created ${createType} "${name}"`,
+        color: 'green',
+      });
+      closeCreateChild();
+      refresh();
+    } catch (error) {
+      notifications.show({
+        title: 'Create Error',
+        message: `Failed to create node: ${(error as Error).message}`,
+        color: 'red',
+      });
+    } finally {
+      setCreatingChild(false);
+    }
+  };
+
+  const createChildButtons = (
+    <Menu position="bottom-start" withinPortal>
+      <Menu.Target>
+        <Tooltip label="Create node" position="top" openDelay={300}>
+          <ActionIcon variant="subtle" color="gray" radius="xl" size="lg">
+            <IconPlus size={20} />
+          </ActionIcon>
+        </Tooltip>
+      </Menu.Target>
+      <Menu.Dropdown>
+        {CREATABLE_CHILD_TYPES.map((nt) => (
+          <Menu.Item key={nt} leftSection={<NodeIcon type={nt} size={16} />} onClick={() => setCreateType(nt)}>
+            Create {nt}
+          </Menu.Item>
+        ))}
+      </Menu.Dropdown>
+    </Menu>
+  );
 
   // Show a node in the right Node Info panel, clearing any pending association
   // so a plain selection doesn't reopen inline association mode.
@@ -90,6 +166,7 @@ function PcTreePanel({ rootNodes, onRefresh }: { rootNodes?: TreeNode[]; onRefre
           showDirection
           showCreatePolicyClass={false}
           showReset
+          leftToolbarSection={createChildButtons}
           clickHandlers={{ onLeftClick: showInfo, onRightClick }}
         />
         {rootNodes === undefined && (
@@ -125,6 +202,46 @@ function PcTreePanel({ rootNodes, onRefresh }: { rootNodes?: TreeNode[]; onRefre
             onSuccess={() => setProhibitionNode(null)}
           />
         )}
+      </Modal>
+
+      <Modal
+        opened={!!createType}
+        onClose={closeCreateChild}
+        title={
+          <Text size="lg" fw={600}>
+            Create {createType}
+          </Text>
+        }
+        size="sm"
+      >
+        <Stack gap="md">
+          <TextInput
+            label="Name"
+            placeholder="Name"
+            value={newChildName}
+            onChange={(e) => setNewChildName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (newChildName.trim()) {
+                  handleCreateChild();
+                }
+              }
+            }}
+            data-autofocus
+            required
+            leftSection={createType && <NodeIcon type={createType} size={20} />}
+          />
+
+          <Group justify="flex-end" gap="sm" mt="md">
+            <Button variant="outline" onClick={closeCreateChild}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateChild} disabled={!newChildName.trim()} loading={creatingChild}>
+              Create
+            </Button>
+          </Group>
+        </Stack>
       </Modal>
     </div>
   );
@@ -290,7 +407,12 @@ function PcAccordion({ leftPanelVisible }: { leftPanelVisible: boolean }) {
               flexDirection: 'column',
             }}
           >
-            <Group justify="flex-start" mb={16}>
+            <Group justify="flex-start" mb={16} gap="xs">
+              <Tooltip label="Refresh" position="top" openDelay={300}>
+                <ActionIcon variant="subtle" color="gray" size="lg" onClick={fetchPcs} loading={loading}>
+                  <IconRefresh size={18} />
+                </ActionIcon>
+              </Tooltip>
               <Button
                 size="xs"
                 variant="light"
@@ -364,6 +486,7 @@ function PcAccordion({ leftPanelVisible }: { leftPanelVisible: boolean }) {
                         <PcTreePanel
                           rootNodes={rootsByPc.get(value)}
                           onRefresh={() => refreshPc(value)}
+                          pcId={pc.id}
                         />
                       </Accordion.Panel>
                     </Accordion.Item>

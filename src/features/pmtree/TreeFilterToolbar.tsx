@@ -2,6 +2,7 @@ import React from 'react';
 import { Tooltip, UnstyledButton } from '@mantine/core';
 import { AssociationDirection, IncomingAssociationIcon, OutgoingAssociationIcon } from '@/features/pmtree/tree-utils';
 import { NodeType } from '@/shared/api/pdp.types';
+import { PANEL_RADIUS } from '@/theme';
 
 export interface TreeFilterConfig {
     nodeTypes: NodeType[];
@@ -32,7 +33,7 @@ const TRACK: React.CSSProperties = {
     alignItems: 'center',
     gap: 2,
     padding: 3,
-    borderRadius: 999,
+    borderRadius: PANEL_RADIUS,
     backgroundColor: 'var(--mantine-color-gray-1)',
 };
 
@@ -44,7 +45,7 @@ function pillStyle(active: boolean): React.CSSProperties {
         height: 26,
         minWidth: 30,
         paddingInline: 9,
-        borderRadius: 999,
+        borderRadius: PANEL_RADIUS,
         fontSize: 12,
         fontWeight: 600,
         lineHeight: 1,
@@ -77,7 +78,7 @@ export function TreeFilterToolbar({ filters, onFiltersChange }: TreeFilterToolba
                 {ALL_NODE_TYPES.map((nodeType) => {
                     const active = filters.nodeTypes.includes(nodeType);
                     return (
-                        <Tooltip key={nodeType} label={NODE_TYPE_LABELS[nodeType]} position="bottom" openDelay={300}>
+                        <Tooltip key={nodeType} label={NODE_TYPE_LABELS[nodeType]} position="top" openDelay={300}>
                             <UnstyledButton
                                 aria-pressed={active}
                                 onClick={() => handleNodeTypeToggle(nodeType)}
@@ -91,7 +92,7 @@ export function TreeFilterToolbar({ filters, onFiltersChange }: TreeFilterToolba
             </div>
 
             <div style={TRACK}>
-                <Tooltip label="Show outgoing associations" position="bottom" openDelay={300}>
+                <Tooltip label="Show outgoing associations" position="top" openDelay={300}>
                     <UnstyledButton
                         aria-pressed={filters.showOutgoingAssociations}
                         onClick={() => handleAssociationDirectionToggle(AssociationDirection.Outgoing)}
@@ -100,7 +101,7 @@ export function TreeFilterToolbar({ filters, onFiltersChange }: TreeFilterToolba
                         <OutgoingAssociationIcon size="18px" color="currentColor" />
                     </UnstyledButton>
                 </Tooltip>
-                <Tooltip label="Show incoming associations" position="bottom" openDelay={300}>
+                <Tooltip label="Show incoming associations" position="top" openDelay={300}>
                     <UnstyledButton
                         aria-pressed={filters.showIncomingAssociations}
                         onClick={() => handleAssociationDirectionToggle(AssociationDirection.Incoming)}

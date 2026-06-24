@@ -11,6 +11,7 @@ import { ObligationsPanel } from '@/features/obligations/ObligationsPanel';
 import { Operations } from '@/features/operations';
 import { ListDetailChromeContext } from '@/components/ListDetailPanel';
 import GraphPanel from './GraphPanel';
+import { PMLPanel } from './PMLPanel';
 import { selectedNodeAtom, selectedUANodeAtom } from './dashboard-atoms';
 
 // Render ListDetailPanel-based left panels with the section-style header that
@@ -60,7 +61,7 @@ async function loadUaTreeRoots(): Promise<TreeNode[]> {
     return sortTreeNodes([...merged.values()]);
 }
 
-function PanelTitle({ children }: { children: React.ReactNode }) {
+export function PanelTitle({ children }: { children: React.ReactNode }) {
     return (
         <div
             style={{
@@ -143,6 +144,8 @@ function renderPanelContent(activeId: string, selectedNode: TreeNode | null): Re
             return <Operations initialMode="function" />;
         case 'graph':
             return <GraphPanel />;
+        case 'pml':
+            return <PMLPanel />;
         default:
             return (
                 <div style={{ color: 'var(--mantine-color-dimmed)', fontSize: 14, paddingTop: 32, textAlign: 'center', padding: '32px 24px 24px' }}>

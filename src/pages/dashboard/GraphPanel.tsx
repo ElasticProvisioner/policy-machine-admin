@@ -1,14 +1,11 @@
 import React from 'react';
-import { Center, Text, Stack } from '@mantine/core';
+import { DAG } from '@/pages/dag/dag';
 
 const GraphPanel: React.FC = () => {
   return (
-    <Center style={{ height: '100%', width: '100%' }}>
-      <Stack align="center" gap="xs">
-        <Text size="xl" fw={700}>Graph</Text>
-        <Text c="dimmed">Graph visualization coming soon...</Text>
-      </Stack>
-    </Center>
+    <div style={{ height: '100%', width: '100%' }}>
+      <DAG />
+    </div>
   );
 };
 
