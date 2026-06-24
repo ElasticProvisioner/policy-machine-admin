@@ -437,11 +437,6 @@ function PcAccordion({ leftPanelVisible }: { leftPanelVisible: boolean }) {
                 onChange={setExpanded}
                 variant="separated"
                 chevronPosition="right"
-                // Keep this non-zero: a value of 0 makes Mantine's Collapse
-                // unmount collapsed panel content, which would destroy each
-                // tree's state on collapse. 200ms (Mantine's own default)
-                // reads smoother than a snappier value once a panel's tree
-                // is already mounted from a prior open.
                 transitionDuration={200}
                 style={{
                   flex: 1,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tooltip } from '@mantine/core';
-import { IconBan, IconCalendarCode, IconChevronDown, IconChevronLeft, IconChevronRight, IconChevronUp, IconHelp, IconGraph, IconCode } from '@tabler/icons-react';
+import { IconBan, IconCalendarCode, IconChevronDown, IconChevronLeft, IconChevronRight, IconChevronUp, IconHelp, IconCode } from '@tabler/icons-react';
 import { AdminOperationIcon } from '@/components/icons/AdminOperationIcon';
 import { ResourceOperationIcon } from '@/components/icons/ResourceOperationIcon';
 import { QueryOperationIcon } from '@/components/icons/QueryOperationIcon';
@@ -60,11 +60,6 @@ export const NAV_SECTIONS: NavSection[] = [
         id: 'functions',
         label: 'Functions',
         renderIcon: () => <FunctionIcon size={20} />,
-    },
-    {
-        id: 'graph',
-        label: 'Graph',
-        renderIcon: () => <IconGraph size={20} />,
     },
     {
         id: 'pml',

@@ -10,10 +10,6 @@ const router = createBrowserRouter([
     element: <Login />,
   },
   {
-    path: '/pml',
-    element: <PMLEditorPage />,
-  },
-  {
     path: '/',
     element: <ProtectedRoute />,
     children: [
